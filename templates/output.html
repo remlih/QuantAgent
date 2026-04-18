@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuantAgent - Analysis Results</title>
+    <title>QuantAgent - Resultados del análisis</title>
+    <link rel="icon" type="image/png" href="{{ url_for('serve_assets', filename='darklogo.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -462,7 +463,7 @@
             <div class="text-center">
                 <!-- Centered Logo and Title -->
                 <div style="display: flex; align-items: center; justify-content: center; gap: 0rem; margin-bottom: 1rem;">
-                    <img src="/assets/darklogo.png" alt="QuantAgent Logo" style="width: 7rem; height: 7rem; object-fit: contain; background: transparent; box-shadow: none; border: none; border-radius: 0; transform: translateY(0.5rem);">
+                    <img src="/assets/darklogo.png" alt="Logo de QuantAgent" style="width: 7rem; height: 7rem; object-fit: contain; background: transparent; box-shadow: none; border: none; border-radius: 0; transform: translateY(0.5rem);">
                     <span style="font-size: 4.0rem; font-weight: 700; color: white; line-height: 1.0;">QuantAgent</span>
                 </div>
                 <div class="text-center">
@@ -475,7 +476,7 @@
                 <!-- Back Button -->
                 <div style="margin-top: 2rem;">
                     <a href="/demo" class="btn btn-outline-light" style="font-size: 1.3rem; padding: 0.75rem 1.5rem; border-radius: 12px;">
-                        <i class="fas fa-arrow-left"></i>&nbsp;&nbsp; Back to Demo
+                        <i class="fas fa-arrow-left"></i>&nbsp;&nbsp; Volver a la demo
                     </a>
                 </div>
             </div>
@@ -487,25 +488,25 @@
              <div class="panel-group">
                                  <div class="panel">
                     <h4 class="panel-title">
-                        <i class="fas fa-chart-pie"></i> Analysis Summary
+                        <i class="fas fa-chart-pie"></i> Resumen del análisis
                     </h4>
                      <div class="row align-items-stretch">
                          <div class="col-md-4 d-flex">
                              <div class="stats-card w-100">
                                  <div class="stats-number">{{ results.data_length if results.data_length else '1,247' }}</div>
-                                 <div class="stats-label">Data Points</div>
+                                  <div class="stats-label">Puntos de datos</div>
                              </div>
                          </div>
                          <div class="col-md-4 d-flex">
                              <div class="stats-card w-100">
                                  <div class="stats-number">{{ results.timeframe if results.timeframe else '1h' }}</div>
-                                 <div class="stats-label">Timeframe</div>
+                                  <div class="stats-label">Intervalo</div>
                              </div>
                          </div>
                          <div class="col-md-4 d-flex">
                              <div class="stats-card w-100">
                                  <div class="stats-number">{{ results.asset_name if results.asset_name else 'BTC' }}</div>
-                                 <div class="stats-label">Asset</div>
+                                  <div class="stats-label">Activo</div>
                              </div>
                          </div>
                      </div>
@@ -514,34 +515,36 @@
                  <!-- Final Decision Panel -->
                  <div class="panel">
                      <h4 class="panel-title">
-                         <i class="fas fa-bullseye"></i> Final Trading Decision
-                     </h4>
-                     <div class="text-center mb-3">
-                         {% if results.final_decision and results.final_decision.decision %}
-                             <span class="decision-badge decision-{{ results.final_decision.decision.lower() }}">{{ results.final_decision.decision }}</span>
-                         {% else %}
-                             <span class="decision-badge decision-long">LONG</span>
-                         {% endif %}
-                     </div>
-                     <div>
-                         {% if results.final_decision %}
-                             <p><strong>Forecast Horizon:</strong> {{ results.final_decision.forecast_horizon if results.final_decision.forecast_horizon else '24-48 hours' }}</p>
-                             <p><strong>Risk/Reward Ratio:</strong> {{ results.final_decision.risk_reward_ratio if results.final_decision.risk_reward_ratio else '1:2.5' }}</p>
-                             <p><strong>Justification:</strong></p>
-                             <p>{{ results.final_decision.justification if results.final_decision.justification else 'Based on comprehensive analysis of technical indicators, pattern recognition, and trend analysis, the system recommends a LONG position on BTC. The analysis shows strong bullish momentum with key support levels holding, and multiple technical indicators confirming upward movement.' }}</p>
-                         {% else %}
-                             <p><strong>Forecast Horizon:</strong> 24-48 hours</p>
-                             <p><strong>Risk/Reward Ratio:</strong> 1:2.5</p>
-                             <p><strong>Justification:</strong></p>
-                             <p>Based on comprehensive analysis of technical indicators, pattern recognition, and trend analysis, the system recommends a LONG position on BTC. The analysis shows strong bullish momentum with key support levels holding, and multiple technical indicators confirming upward movement.</p>
-                         {% endif %}
-                     </div>
-                 </div>
+                          <i class="fas fa-bullseye"></i> Decisión final de trading
+                      </h4>
+                      <div class="text-center mb-3">
+                          {% set final_decision_value = results.final_decision.decision if results.final_decision and results.final_decision.decision else 'LONG' %}
+                          {% set decision_label = 'LARGO' if final_decision_value == 'LONG' else 'CORTO' if final_decision_value == 'SHORT' else final_decision_value %}
+                          {% if results.final_decision and results.final_decision.decision %}
+                              <span class="decision-badge decision-{{ results.final_decision.decision.lower() }}">{{ decision_label }}</span>
+                          {% else %}
+                              <span class="decision-badge decision-long">LARGO</span>
+                          {% endif %}
+                      </div>
+                      <div>
+                          {% if results.final_decision %}
+                              <p><strong>Horizonte de pronóstico:</strong> {{ results.final_decision.forecast_horizon if results.final_decision.forecast_horizon else '24-48 horas' }}</p>
+                              <p><strong>Relación riesgo/beneficio:</strong> {{ results.final_decision.risk_reward_ratio if results.final_decision.risk_reward_ratio else '1:2.5' }}</p>
+                              <p><strong>Justificación:</strong></p>
+                              <p>{{ results.final_decision.justification if results.final_decision.justification else 'Con base en el análisis integral de indicadores técnicos, reconocimiento de patrones y análisis de tendencia, el sistema recomienda una posición LARGA en BTC. El análisis muestra un fuerte impulso alcista, niveles clave de soporte defendidos y múltiples indicadores técnicos confirmando un movimiento ascendente.' }}</p>
+                          {% else %}
+                              <p><strong>Horizonte de pronóstico:</strong> 24-48 horas</p>
+                              <p><strong>Relación riesgo/beneficio:</strong> 1:2.5</p>
+                              <p><strong>Justificación:</strong></p>
+                              <p>Con base en el análisis integral de indicadores técnicos, reconocimiento de patrones y análisis de tendencia, el sistema recomienda una posición LARGA en BTC. El análisis muestra un fuerte impulso alcista, niveles clave de soporte defendidos y múltiples indicadores técnicos confirmando un movimiento ascendente.</p>
+                          {% endif %}
+                      </div>
+                  </div>
                  
                                  <!-- Technical Indicators Panel -->
                 <div class="large-panel">
                     <h3 class="large-panel-title">
-                        <i class="fas fa-chart-bar"></i> Indicator Agent
+                        <i class="fas fa-chart-bar"></i> Agente de indicadores
                     </h3>
                     <div class="large-panel-section">
                         {% if results.technical_indicators %}
@@ -549,11 +552,11 @@
                         {% else %}
                             <div class="auto-beautify">
                                 <ul>
-                                    <li><strong>RSI (14):</strong> 65.4 - Neutral to bullish momentum</li>
-                                    <li><strong>MACD:</strong> Bullish crossover with increasing histogram</li>
-                                    <li><strong>Moving Averages:</strong> Price above 50-day and 200-day MA</li>
-                                    <li><strong>Bollinger Bands:</strong> Price in upper band, showing strength</li>
-                                    <li><strong>Volume:</strong> Above average volume supporting price action</li>
+                                    <li><strong>RSI (14):</strong> 65.4 - Impulso neutral a alcista</li>
+                                    <li><strong>MACD:</strong> Cruce alcista con histograma en aumento</li>
+                                    <li><strong>Medias móviles:</strong> Precio por encima de las MA de 50 y 200 días</li>
+                                    <li><strong>Bandas de Bollinger:</strong> Precio en la banda superior, mostrando fortaleza</li>
+                                    <li><strong>Volumen:</strong> Volumen por encima del promedio, respaldando la acción del precio</li>
                                 </ul>
                             </div>
                         {% endif %}
@@ -566,46 +569,50 @@
                                      <!-- Pattern Agent: Pattern Recognition + Pattern Visualization -->
             <div class="large-panel">
                 <h3 class="large-panel-title">
-                    <i class="fas fa-brain"></i> Pattern Agent
+                    <i class="fas fa-brain"></i> Agente de patrones
                 </h3>
                 <div style="display: flex; gap: 2rem; margin-top: 1rem;">
                     <!-- Left Panel: Pattern Recognition -->
                     <div class="panel" style="flex: 1;">
                         <h4 class="panel-title">
-                            <i class="fas fa-search"></i> Pattern Recognition
+                            <i class="fas fa-search"></i> Reconocimiento de patrones
                         </h4>
                         <div class="form-group">
-                            <h5>Identified Pattern:</h5>
+                            <h5>Patrón identificado:</h5>
                             {% if results.pattern_analysis %}
                                 <div class="auto-beautify">{{ results.pattern_analysis | safe }}</div>
                             {% else %}
                                 <ul>
-                                    <li><strong>Descending Triangle:</strong> Lower highs with flat support</li>
-                                    <li><strong>Structure:</strong> Converging trend lines</li>
-                                    <li><strong>Trend:</strong> Prior downtrend continuation</li>
-                                    <li><strong>Symmetry:</strong> Consistent pattern formation</li>
+                                    <li><strong>Triángulo descendente:</strong> Máximos decrecientes con soporte plano</li>
+                                    <li><strong>Estructura:</strong> Líneas de tendencia convergentes</li>
+                                    <li><strong>Tendencia:</strong> Continuación de la tendencia bajista previa</li>
+                                    <li><strong>Simetría:</strong> Formación de patrón consistente</li>
                                 </ul>
                             {% endif %}
                         </div>
                         
                         <div class="form-group">
-                            <h5>Pattern Reliability:</h5>
-                            <p>Descending triangle has a high success rate for bearish continuation patterns. Key support level at 110,000.</p>
+                            <h5>Confiabilidad del patrón:</h5>
+                            <p>El triángulo descendente tiene una alta tasa de éxito como patrón de continuación bajista. Nivel clave de soporte en 110,000.</p>
                         </div>
                     </div>
                     
                     <!-- Right Panel: Pattern Visualization -->
                     <div class="panel" style="flex: 1;">
                         <h4 class="panel-title">
-                            <i class="fas fa-chart-bar"></i> Pattern Visualization
+                            <i class="fas fa-chart-bar"></i> Visualización del patrón
                         </h4>
                         <div class="image-container">
                             {% if results.pattern_chart %}
-                                <img src="data:image/png;base64,{{ results.pattern_chart }}" alt="Pattern Analysis Chart" class="analysis-image">
+                                <img src="data:image/png;base64,{{ results.pattern_chart }}" alt="Gráfico de análisis de patrones" class="analysis-image">
+                            {% elif results.pattern_image_filename %}
+                                <img src="/api/images/pattern" alt="Gráfico de análisis de patrones" class="analysis-image">
                             {% else %}
-                                <img src="/api/images/pattern" alt="Pattern Analysis Chart" class="analysis-image">
+                                <div class="image-placeholder">
+                                    <p>Visualización del patrón no disponible.</p>
+                                </div>
                             {% endif %}
-                            <p class="chart-caption">Desc Triangle Overlay</p>
+                            <p class="chart-caption">Superposición de triángulo descendente</p>
                         </div>
                     </div>
                 </div>
@@ -614,41 +621,45 @@
                          <!-- Trend Agent: Trend Analysis + Trend Chart -->
             <div class="large-panel">
                 <h3 class="large-panel-title">
-                    <i class="fas fa-chart-line"></i> Trend Agent
+                    <i class="fas fa-chart-line"></i> Agente de tendencia
                 </h3>
                 <div class="large-panel-content">
                     <div class="panel-group-2">
                         <div class="panel">
                             <h4 class="panel-title">
-                                <i class="fas fa-analytics"></i> Trend Analysis
+                                <i class="fas fa-analytics"></i> Análisis de tendencia
                             </h4>
                             <div class="form-group">
-                                <h5>Trend Strength Indicators:</h5>
+                                <h5>Indicadores de fuerza de la tendencia:</h5>
                                 <ul>
-                                    <li><strong>ADX:</strong> 28.5 - Moderate trend strength</li>
-                                    <li><strong>RSI Divergence:</strong> Positive divergence detected</li>
-                                    <li><strong>Momentum:</strong> Declining momentum indicators</li>
-                                    <li><strong>Volume:</strong> Decreasing volume on rallies</li>
+                                    <li><strong>ADX:</strong> 28.5 - Fuerza de tendencia moderada</li>
+                                    <li><strong>Divergencia RSI:</strong> Divergencia positiva detectada</li>
+                                    <li><strong>Impulso:</strong> Indicadores de impulso debilitándose</li>
+                                    <li><strong>Volumen:</strong> Volumen decreciente en los rebotes</li>
                                 </ul>
                             </div>
                             
                             <div class="form-group">
-                                <h5>Likely Downtrend Signal:</h5>
-                                <p>Consistent downward slope and inability to break resistance suggest continued bearish pressure. Short-term trend likely to continue downward.</p>
+                                <h5>Señal probable de tendencia bajista:</h5>
+                                <p>La pendiente descendente constante y la incapacidad de romper la resistencia sugieren presión bajista continua. Es probable que la tendencia de corto plazo siga descendiendo.</p>
                             </div>
                         </div>
                         
                         <div class="panel">
                             <h4 class="panel-title">
-                                <i class="fas fa-chart-line"></i> Trend Visualization
+                                <i class="fas fa-chart-line"></i> Visualización de tendencia
                             </h4>
                             <div class="image-container">
                                 {% if results.trend_chart %}
-                                    <img src="data:image/png;base64,{{ results.trend_chart }}" alt="Trend Analysis Chart" class="analysis-image">
+                                    <img src="data:image/png;base64,{{ results.trend_chart }}" alt="Gráfico de análisis de tendencia" class="analysis-image">
+                                {% elif results.trend_image_filename %}
+                                    <img src="/api/images/trend" alt="Gráfico de análisis de tendencia" class="analysis-image">
                                 {% else %}
-                                    <img src="/api/images/trend" alt="Trend Analysis Chart" class="analysis-image">
+                                    <div class="image-placeholder">
+                                        <p>Visualización de tendencia no disponible.</p>
+                                    </div>
                                 {% endif %}
-                                <p class="chart-caption">Support & Resistance Lines</p>
+                                <p class="chart-caption">Líneas de soporte y resistencia</p>
                             </div>
                         </div>
                     </div>
