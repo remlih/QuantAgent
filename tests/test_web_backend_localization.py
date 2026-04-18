@@ -100,7 +100,7 @@ class TestWebBackendLocalization(unittest.TestCase):
 
         self.assertEqual(
             data["error"],
-            "El proveedor debe ser 'openai', 'anthropic', 'qwen' o 'minimax'",
+            "El proveedor debe ser 'openai', 'anthropic', 'qwen', 'minimax' o 'copilot'",
         )
 
     @patch("web_interface.TradingGraph")

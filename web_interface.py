@@ -11,6 +11,11 @@ import yfinance as yf
 from flask import Flask, jsonify, render_template, request, send_file
 from openai import OpenAI
 
+from copilot_provider import (
+    DEFAULT_COPILOT_AGENT_MODEL,
+    DEFAULT_COPILOT_GRAPH_MODEL,
+    validate_copilot_auth,
+)
 import static_util
 from trading_graph import TradingGraph, resolve_api_key
 
@@ -319,13 +324,31 @@ class WebTradingAnalyzer:
                 "anthropic": "Anthropic",
                 "qwen": "Qwen",
                 "minimax": "MiniMax",
+                "copilot": "GitHub Copilot",
             }
             providers_to_check = {
                 self.config.get("agent_llm_provider", "openai"),
                 self.config.get("graph_llm_provider", "openai"),
             }
             for provider in providers_to_check:
-                if not resolve_api_key(self.config, provider):
+                if provider == "copilot":
+                    auth_ok, auth_details = validate_copilot_auth(
+                        github_token=resolve_api_key(self.config, provider) or None
+                    )
+                    if auth_ok:
+                        continue
+                elif resolve_api_key(self.config, provider):
+                    continue
+
+                if provider == "copilot" and isinstance(auth_details, str) and auth_details:
+                    return {
+                        "success": False,
+                        "error": (
+                            "❌ Autenticación inválida: GitHub Copilot no está listo. "
+                            f"Detalle: {auth_details}"
+                        ),
+                    }
+                else:
                     provider_name = provider_names.get(provider, provider)
                     return {
                         "success": False,
@@ -368,6 +391,8 @@ class WebTradingAnalyzer:
                 provider_name = "Anthropic"
             elif provider == "minimax":
                 provider_name = "MiniMax"
+            elif provider == "copilot":
+                provider_name = "GitHub Copilot"
             else:
                 provider_name = "Qwen"
 
@@ -588,7 +613,7 @@ class WebTradingAnalyzer:
                 _ = llm.invoke([("user", "Hello")])
 
                 provider_name = "Qwen"
-            else:  # minimax
+            elif provider == "minimax":
                 from openai import OpenAI as _OpenAI
                 api_key = resolve_api_key(self.config, provider)
                 if not api_key:
@@ -605,6 +630,29 @@ class WebTradingAnalyzer:
                 )
 
                 provider_name = "MiniMax"
+            else:  # copilot
+                api_key = resolve_api_key(self.config, provider)
+                auth_ok, auth_details = validate_copilot_auth(
+                    github_token=api_key or None
+                )
+                if not auth_ok:
+                    return {
+                        "valid": False,
+                        "error": (
+                            "❌ Autenticación inválida: GitHub Copilot no está listo. "
+                            f"Detalle: {auth_details}"
+                        ),
+                    }
+
+                provider_name = "GitHub Copilot"
+                model_summary = (
+                    ", ".join(auth_details[:3]) if isinstance(auth_details, list) else ""
+                )
+                suffix = f" Modelos disponibles: {model_summary}" if model_summary else ""
+                return {
+                    "valid": True,
+                    "message": f"{provider_name} está autenticado correctamente.{suffix}",
+                }
             return {"valid": True, "message": f"La clave API de {provider_name} es válida"}
 
         except Exception as e:
@@ -619,6 +667,8 @@ class WebTradingAnalyzer:
                 provider_name = "Anthropic"
             elif provider == "minimax":
                 provider_name = "MiniMax"
+            elif provider == "copilot":
+                provider_name = "GitHub Copilot"
             else:
                 provider_name = "Qwen"
 
@@ -938,8 +988,8 @@ def update_provider():
         data = request.get_json()
         provider = data.get("provider", "openai")
 
-        if provider not in ["openai", "anthropic", "qwen", "minimax"]:
-            return jsonify({"error": "El proveedor debe ser 'openai', 'anthropic', 'qwen' o 'minimax'"})
+        if provider not in ["openai", "anthropic", "qwen", "minimax", "copilot"]:
+            return jsonify({"error": "El proveedor debe ser 'openai', 'anthropic', 'qwen', 'minimax' o 'copilot'"})
 
         print(f"Updating provider to: {provider}")
 
@@ -968,12 +1018,15 @@ def update_provider():
                 analyzer.config["agent_llm_model"] = "MiniMax-M2.7"
             if not analyzer.config["graph_llm_model"].startswith("MiniMax"):
                 analyzer.config["graph_llm_model"] = "MiniMax-M2.7"
+        elif provider == "copilot":
+            analyzer.config["agent_llm_model"] = DEFAULT_COPILOT_AGENT_MODEL
+            analyzer.config["graph_llm_model"] = DEFAULT_COPILOT_GRAPH_MODEL
 
         else:
             # Set default OpenAI models if not already set to OpenAI models
-            if analyzer.config["agent_llm_model"].startswith(("claude", "qwen", "MiniMax")):
+            if analyzer.config["agent_llm_model"].startswith(("claude", "qwen", "MiniMax")) or analyzer.config["agent_llm_model"] in {DEFAULT_COPILOT_AGENT_MODEL, DEFAULT_COPILOT_GRAPH_MODEL}:
                 analyzer.config["agent_llm_model"] = "gpt-4o-mini"
-            if analyzer.config["graph_llm_model"].startswith(("claude", "qwen", "MiniMax")):
+            if analyzer.config["graph_llm_model"].startswith(("claude", "qwen", "MiniMax")) or analyzer.config["graph_llm_model"] in {DEFAULT_COPILOT_AGENT_MODEL, DEFAULT_COPILOT_GRAPH_MODEL}:
                 analyzer.config["graph_llm_model"] = "gpt-4o"
         
         analyzer.trading_graph.config.update(analyzer.config)
@@ -1002,8 +1055,8 @@ def update_api_key():
         if not new_api_key:
             return jsonify({"error": "La clave API es obligatoria"})
 
-        if provider not in ["openai", "anthropic", "qwen", "minimax"]:
-            return jsonify({"error": "El proveedor debe ser 'openai', 'anthropic', 'qwen' o 'minimax'"})
+        if provider not in ["openai", "anthropic", "qwen", "minimax", "copilot"]:
+            return jsonify({"error": "El proveedor debe ser 'openai', 'anthropic', 'qwen', 'minimax' o 'copilot'"})
 
         print(f"Updating {provider} API key to: {new_api_key[:8]}...{new_api_key[-4:]}")
 
@@ -1016,6 +1069,8 @@ def update_api_key():
             os.environ["DASHSCOPE_API_KEY"] = new_api_key
         elif provider == "minimax":
             os.environ["MINIMAX_API_KEY"] = new_api_key
+        elif provider == "copilot":
+            os.environ["COPILOT_GITHUB_TOKEN"] = new_api_key
 
         # Update the API key in the trading graph
         analyzer.trading_graph.update_api_key(new_api_key, provider=provider)
@@ -1039,6 +1094,19 @@ def get_api_key_status():
             api_key = resolve_api_key(config, provider)
         except ValueError:
             api_key = ""
+
+        if provider == "copilot" and not api_key:
+            auth_ok, auth_details = validate_copilot_auth(github_token=None)
+            if auth_ok:
+                model_preview = auth_details[:3] if isinstance(auth_details, list) else []
+                return jsonify(
+                    {
+                        "has_key": True,
+                        "masked_key": "CLI login",
+                        "auth_source": "cli_login",
+                        "models": model_preview,
+                    }
+                )
 
         if api_key:
             # Return masked version for security

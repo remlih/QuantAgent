@@ -1,8 +1,5 @@
-from typing import Dict
-
-from langchain_openai import ChatOpenAI
+from langchain_core.language_models import BaseChatModel
 from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode
 
 from agent_state import IndicatorAgentState
 from decision_agent import create_final_trade_decider
@@ -15,8 +12,8 @@ from trend_agent import create_trend_agent
 class SetGraph:
     def __init__(
         self,
-        agent_llm: ChatOpenAI,
-        graph_llm: ChatOpenAI,
+        agent_llm: BaseChatModel,
+        graph_llm: BaseChatModel,
         toolkit: TechnicalTools,
         # tool_nodes: Dict[str, ToolNode],
     ):

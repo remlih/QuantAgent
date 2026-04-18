@@ -12,6 +12,7 @@ from langchain_openai import ChatOpenAI
 from langchain_qwq import ChatQwen
 from langgraph.prebuilt import ToolNode
 
+from copilot_provider import CopilotChatModel
 from default_config import DEFAULT_CONFIG
 from graph_setup import SetGraph
 from graph_util import TechnicalTools
@@ -22,13 +23,15 @@ _PROVIDER_CONFIG_KEYS = {
     "anthropic": "anthropic_api_key",
     "qwen": "qwen_api_key",
     "minimax": "minimax_api_key",
+    "copilot": "copilot_github_token",
 }
 
 _PROVIDER_ENV_KEYS = {
-    "openai": "OPENAI_API_KEY",
-    "anthropic": "ANTHROPIC_API_KEY",
-    "qwen": "DASHSCOPE_API_KEY",
-    "minimax": "MINIMAX_API_KEY",
+    "openai": ("OPENAI_API_KEY",),
+    "anthropic": ("ANTHROPIC_API_KEY",),
+    "qwen": ("DASHSCOPE_API_KEY",),
+    "minimax": ("MINIMAX_API_KEY",),
+    "copilot": ("COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"),
 }
 
 _API_KEY_PLACEHOLDERS = {
@@ -54,19 +57,20 @@ def resolve_api_key(
     """Resolve the effective provider API key, preferring non-placeholder config over env."""
     if provider not in _PROVIDER_CONFIG_KEYS:
         raise ValueError(
-            f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', or 'minimax'"
+            f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', 'minimax', or 'copilot'"
         )
 
     config_key = _PROVIDER_CONFIG_KEYS[provider]
-    env_key = _PROVIDER_ENV_KEYS[provider]
+    env_keys = _PROVIDER_ENV_KEYS[provider]
 
     config_value = config.get(config_key, "")
     if not is_missing_api_key(config_value):
         return config_value.strip()
 
-    env_value = os.environ.get(env_key, "")
-    if not is_missing_api_key(env_value):
-        return env_value.strip()
+    for env_key in env_keys:
+        env_value = os.environ.get(env_key, "")
+        if not is_missing_api_key(env_value):
+            return env_value.strip()
 
     if allow_placeholder_fallback and isinstance(config_value, str):
         return config_value.strip()
@@ -166,8 +170,13 @@ class TradingGraph:
                     "2. Update the config with: config['minimax_api_key'] = 'your-key-here'\n"
                     "3. Use the web interface to update the API key"
                 )
+        elif provider == "copilot":
+            # Copilot SDK can use explicit tokens or a logged-in CLI user.
+            api_key = resolve_api_key(self.config, provider)
         else:
-            raise ValueError(f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', or 'minimax'")
+            raise ValueError(
+                f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', 'minimax', or 'copilot'"
+            )
         
         return api_key
 
@@ -178,8 +187,8 @@ class TradingGraph:
         Create an LLM instance based on the provider.
 
         Args:
-            provider: The provider name ("openai", "anthropic", "qwen", or "minimax")
-            model: The model name (e.g., "gpt-4o", "claude-3-5-sonnet-20241022", "qwen-vl-max-latest", "MiniMax-M2.7")
+            provider: The provider name ("openai", "anthropic", "qwen", "minimax", or "copilot")
+            model: The model name (e.g., "gpt-4o", "claude-3-5-sonnet-20241022", "qwen-vl-max-latest", "MiniMax-M2.7", "gpt-5.4")
             temperature: The temperature setting for the model
 
         Returns:
@@ -219,8 +228,16 @@ class TradingGraph:
                 api_key=api_key,
                 openai_api_base="https://api.minimax.io/v1",
             )
+        elif provider == "copilot":
+            return CopilotChatModel(
+                model=model,
+                temperature=temperature,
+                github_token=api_key or None,
+            )
         else:
-            raise ValueError(f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', or 'minimax'")
+            raise ValueError(
+                f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', 'minimax', or 'copilot'"
+            )
 
     # def _set_tool_nodes(self) -> Dict[str, ToolNode]:
     #     """
@@ -279,7 +296,7 @@ class TradingGraph:
         
         Args:
             api_key (str): The new API key
-            provider (str): The provider name ("openai" or "anthropic"), defaults to "openai"
+            provider (str): The provider name ("openai", "anthropic", "qwen", "minimax", or "copilot"), defaults to "openai"
         """
         if provider == "openai":
             # Update the config with the new API key
@@ -305,8 +322,16 @@ class TradingGraph:
 
             # Also update the environment variable for consistency
             os.environ["MINIMAX_API_KEY"] = api_key
+        elif provider == "copilot":
+            # Update the config with the new GitHub token
+            self.config["copilot_github_token"] = api_key
+
+            # Also update the environment variable for consistency
+            os.environ["COPILOT_GITHUB_TOKEN"] = api_key
         else:
-            raise ValueError(f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', or 'minimax'")
+            raise ValueError(
+                f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', 'minimax', or 'copilot'"
+            )
         
         # Refresh the LLMs with the new API key
         self.refresh_llms()
