@@ -17,6 +17,63 @@ from graph_setup import SetGraph
 from graph_util import TechnicalTools
 
 
+_PROVIDER_CONFIG_KEYS = {
+    "openai": "api_key",
+    "anthropic": "anthropic_api_key",
+    "qwen": "qwen_api_key",
+    "minimax": "minimax_api_key",
+}
+
+_PROVIDER_ENV_KEYS = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "qwen": "DASHSCOPE_API_KEY",
+    "minimax": "MINIMAX_API_KEY",
+}
+
+_API_KEY_PLACEHOLDERS = {
+    "",
+    "sk-",
+    "your-openai-api-key-here",
+    "your-anthropic-api-key-here",
+    "your-qwen-api-key-here",
+    "your-minimax-api-key-here",
+}
+
+
+def is_missing_api_key(api_key: str | None) -> bool:
+    """Treat empty and placeholder values as missing API keys."""
+    if api_key is None:
+        return True
+    return api_key.strip() in _API_KEY_PLACEHOLDERS
+
+
+def resolve_api_key(
+    config: Dict[str, str], provider: str, allow_placeholder_fallback: bool = False
+) -> str:
+    """Resolve the effective provider API key, preferring non-placeholder config over env."""
+    if provider not in _PROVIDER_CONFIG_KEYS:
+        raise ValueError(
+            f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', or 'minimax'"
+        )
+
+    config_key = _PROVIDER_CONFIG_KEYS[provider]
+    env_key = _PROVIDER_ENV_KEYS[provider]
+
+    config_value = config.get(config_key, "")
+    if not is_missing_api_key(config_value):
+        return config_value.strip()
+
+    env_value = os.environ.get(env_key, "")
+    if not is_missing_api_key(env_value):
+        return env_value.strip()
+
+    if allow_placeholder_fallback and isinstance(config_value, str):
+        return config_value.strip()
+
+    return ""
+
+
 class TradingGraph:
     """
     Main orchestrator for the multi-agent trading system.
@@ -68,14 +125,9 @@ class TradingGraph:
             ValueError: If API key is missing or invalid
         """
         if provider == "openai":
-            # First check if API key is provided in config
-            api_key = self.config.get("api_key")
-            
-            # If not in config, check environment variable
-            if not api_key:
-                api_key = os.environ.get("OPENAI_API_KEY")
-            
-            # Validate the API key
+            api_key = resolve_api_key(
+                self.config, provider, allow_placeholder_fallback=True
+            )
             if not api_key:
                 raise ValueError(
                     "OpenAI API key not found. Please set it using one of these methods:\n"
@@ -83,75 +135,36 @@ class TradingGraph:
                     "2. Update the config with: config['api_key'] = 'your-key-here'\n"
                     "3. Use the web interface to update the API key"
                 )
-            
-            if api_key == "your-openai-api-key-here" or api_key == "":
-                raise ValueError(
-                    "Please replace the placeholder API key with your actual OpenAI API key. "
-                    "You can get one from: https://platform.openai.com/api-keys"
-                )
         elif provider == "anthropic":
-            # First check if API key is provided in config
-            api_key = self.config.get("anthropic_api_key")
-            
-            # If not in config, check environment variable
-            if not api_key:
-                api_key = os.environ.get("ANTHROPIC_API_KEY")
-            
-            # Validate the API key
+            api_key = resolve_api_key(
+                self.config, provider, allow_placeholder_fallback=True
+            )
             if not api_key:
                 raise ValueError(
                     "Anthropic API key not found. Please set it using one of these methods:\n"
                     "1. Set environment variable: export ANTHROPIC_API_KEY='your-key-here'\n"
                     "2. Update the config with: config['anthropic_api_key'] = 'your-key-here'\n"
                 )
-            
-            if api_key == "":
-                raise ValueError(
-                    "Please provide your actual Anthropic API key. "
-                    "You can get one from: https://console.anthropic.com/"
-                )
         elif provider == "qwen":
-            # First check if API key is provided in config
-            api_key = self.config.get("qwen_api_key")
-
-            # If not in config, check environment variable
-            if not api_key:
-                api_key = os.environ.get("DASHSCOPE_API_KEY")
-
-            # Validate the API key
+            api_key = resolve_api_key(
+                self.config, provider, allow_placeholder_fallback=True
+            )
             if not api_key:
                 raise ValueError(
                     "Qwen API key not found. Please set it using one of these methods:\n"
                     "1. Set environment variable: export DASHSCOPE_API_KEY='your-key-here'\n"
                     "2. Update the config with: config['qwen_api_key'] = 'your-key-here'\n"
                 )
-
-            if api_key == "":
-                raise ValueError(
-                    "Please provide your actual Qwen API key. "
-                    "You can get one from: https://dashscope.console.aliyun.com/"
-                )
         elif provider == "minimax":
-            # First check if API key is provided in config
-            api_key = self.config.get("minimax_api_key")
-
-            # If not in config, check environment variable
-            if not api_key:
-                api_key = os.environ.get("MINIMAX_API_KEY")
-
-            # Validate the API key
+            api_key = resolve_api_key(
+                self.config, provider, allow_placeholder_fallback=True
+            )
             if not api_key:
                 raise ValueError(
                     "MiniMax API key not found. Please set it using one of these methods:\n"
                     "1. Set environment variable: export MINIMAX_API_KEY='your-key-here'\n"
                     "2. Update the config with: config['minimax_api_key'] = 'your-key-here'\n"
                     "3. Use the web interface to update the API key"
-                )
-
-            if api_key == "":
-                raise ValueError(
-                    "Please provide your actual MiniMax API key. "
-                    "You can get one from: https://platform.minimaxi.com/"
                 )
         else:
             raise ValueError(f"Unsupported provider: {provider}. Must be 'openai', 'anthropic', 'qwen', or 'minimax'")

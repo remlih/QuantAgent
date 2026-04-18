@@ -12,7 +12,7 @@ from flask import Flask, jsonify, render_template, request, send_file
 from openai import OpenAI
 
 import static_util
-from trading_graph import TradingGraph
+from trading_graph import TradingGraph, resolve_api_key
 
 app = Flask(__name__)
 
@@ -293,6 +293,24 @@ class WebTradingAnalyzer:
             elif timeframe == "1mo":
                 display_timeframe = "1 month"
 
+            provider_names = {
+                "openai": "OpenAI",
+                "anthropic": "Anthropic",
+                "qwen": "Qwen",
+                "minimax": "MiniMax",
+            }
+            providers_to_check = {
+                self.config.get("agent_llm_provider", "openai"),
+                self.config.get("graph_llm_provider", "openai"),
+            }
+            for provider in providers_to_check:
+                if not resolve_api_key(self.config, provider):
+                    provider_name = provider_names.get(provider, provider)
+                    return {
+                        "success": False,
+                        "error": f"❌ Invalid API Key: The {provider_name} API key is not set. Please update it in the Settings section.",
+                    }
+
             p_image = static_util.generate_kline_image(df_slice_dict)
             t_image = static_util.generate_trend_image(df_slice_dict)
 
@@ -499,7 +517,14 @@ class WebTradingAnalyzer:
             
             if provider == "openai":
                 from openai import OpenAI
-                client = OpenAI()
+                api_key = resolve_api_key(self.config, provider)
+                if not api_key:
+                    return {
+                        "valid": False,
+                        "error": "❌ Invalid API Key: The OpenAI API key is not set. Please update it in the Settings section.",
+                    }
+
+                client = OpenAI(api_key=api_key)
                 
                 # Make a simple test call
                 _ = client.chat.completions.create(
@@ -511,7 +536,7 @@ class WebTradingAnalyzer:
                 provider_name = "OpenAI"
             elif provider == "anthropic":
                 from anthropic import Anthropic
-                api_key = os.environ.get("ANTHROPIC_API_KEY") or self.config.get("anthropic_api_key", "")
+                api_key = resolve_api_key(self.config, provider)
                 if not api_key:
                     return {
                         "valid": False,
@@ -530,7 +555,7 @@ class WebTradingAnalyzer:
                 provider_name = "Anthropic"
             elif provider == "qwen":
                 from langchain_qwq import ChatQwen
-                api_key = os.environ.get("DASHSCOPE_API_KEY") or self.config.get("qwen_api_key", "")
+                api_key = resolve_api_key(self.config, provider)
                 if not api_key:
                     return {
                         "valid": False,
@@ -544,7 +569,7 @@ class WebTradingAnalyzer:
                 provider_name = "Qwen"
             else:  # minimax
                 from openai import OpenAI as _OpenAI
-                api_key = os.environ.get("MINIMAX_API_KEY") or self.config.get("minimax_api_key", "")
+                api_key = resolve_api_key(self.config, provider)
                 if not api_key:
                     return {
                         "valid": False,
@@ -986,32 +1011,14 @@ def get_api_key_status():
     """API endpoint to check if API key is set for a provider."""
     try:
         provider = request.args.get("provider", "openai")
-        
-        # First check environment variables
-        if provider == "openai":
-            api_key = os.environ.get("OPENAI_API_KEY", "")
-            # Fallback to config if not in environment
-            if not api_key and hasattr(analyzer, 'config'):
-                api_key = analyzer.config.get("api_key", "")
-        elif provider == "anthropic":
-            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-            # Fallback to config if not in environment
-            if not api_key and hasattr(analyzer, 'config'):
-                api_key = analyzer.config.get("anthropic_api_key", "")
-        elif provider == "qwen":
-            api_key = os.environ.get("DASHSCOPE_API_KEY", "")
-            # Fallback to config if not in environment
-            if not api_key and hasattr(analyzer, 'config'):
-                api_key = analyzer.config.get("qwen_api_key", "")
-        elif provider == "minimax":
-            api_key = os.environ.get("MINIMAX_API_KEY", "")
-            # Fallback to config if not in environment
-            if not api_key and hasattr(analyzer, 'config'):
-                api_key = analyzer.config.get("minimax_api_key", "")
-        else:
+
+        config = analyzer.config if hasattr(analyzer, "config") else {}
+        try:
+            api_key = resolve_api_key(config, provider)
+        except ValueError:
             api_key = ""
-        
-        if api_key and api_key != "your-openai-api-key-here" and api_key != "":
+
+        if api_key:
             # Return masked version for security
             masked_key = (
                 api_key[:3] + "..." + api_key[-3:] if len(api_key) > 12 else "***"

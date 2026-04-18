@@ -5,6 +5,8 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch, PropertyMock
 
+import pandas as pd
+
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -55,6 +57,15 @@ class TestTradingGraphGetApiKey(unittest.TestCase):
         tg = self._make_graph(config)
         key = tg._get_api_key("minimax")
         self.assertEqual(key, "test-minimax-key-123")
+
+    def test_get_openai_api_key_falls_back_to_env_when_config_uses_placeholder(self):
+        """OpenAI should ignore the default placeholder and use OPENAI_API_KEY."""
+        config = DEFAULT_CONFIG.copy()
+        config["api_key"] = "sk-"
+        tg = self._make_graph(config)
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "env-openai-key"}):
+            key = tg._get_api_key("openai")
+            self.assertEqual(key, "env-openai-key")
 
     def test_get_api_key_from_env(self):
         """Should fall back to MINIMAX_API_KEY env var."""
@@ -354,6 +365,112 @@ class TestProviderSwitchBackToOpenAI(unittest.TestCase):
         self.assertTrue(data.get("success"))
         self.assertEqual(analyzer.config["agent_llm_model"], "gpt-4o-mini")
         self.assertEqual(analyzer.config["graph_llm_model"], "gpt-4o")
+
+
+class TestWebInterfaceApiKeyStatus(unittest.TestCase):
+    """Tests for API key status reporting in the web interface."""
+
+    @patch("web_interface.TradingGraph")
+    def test_get_api_key_status_openai_placeholder_returns_false(self, mock_tg_class):
+        """The default placeholder key should not be reported as a real OpenAI key."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+        os.environ.pop("OPENAI_API_KEY", None)
+
+        client = app.test_client()
+        resp = client.get("/api/get-api-key-status?provider=openai")
+        data = resp.get_json()
+
+        self.assertFalse(data.get("has_key"))
+
+
+class TestWebTradingAnalyzerRunAnalysis(unittest.TestCase):
+    """Tests for WebTradingAnalyzer.run_analysis()."""
+
+    @patch("web_interface.TradingGraph")
+    @patch("web_interface.static_util.generate_trend_image")
+    @patch("web_interface.static_util.generate_kline_image")
+    def test_run_analysis_fails_fast_when_openai_key_is_not_configured(
+        self, mock_kline_image, mock_trend_image, mock_tg_class
+    ):
+        """run_analysis() should stop before image generation when the key is missing."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg.graph = MagicMock()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import WebTradingAnalyzer
+
+        analyzer = WebTradingAnalyzer()
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+        os.environ.pop("OPENAI_API_KEY", None)
+
+        df = pd.DataFrame(
+            {
+                "Datetime": pd.to_datetime(["2026-04-17 00:00:00", "2026-04-17 01:00:00"]),
+                "Open": [1.0, 2.0],
+                "High": [1.5, 2.5],
+                "Low": [0.5, 1.5],
+                "Close": [1.2, 2.2],
+            }
+        )
+
+        result = analyzer.run_analysis(df, "BTC", "1h")
+
+        self.assertFalse(result["success"])
+        self.assertIn("not set", result["error"])
+        mock_kline_image.assert_not_called()
+        mock_trend_image.assert_not_called()
+        mock_tg.graph.invoke.assert_not_called()
+
+
+class TestWebInterfaceTemplateHelpers(unittest.TestCase):
+    """Tests for JavaScript helpers required by the rendered web UI."""
+
+    @patch("web_interface.TradingGraph")
+    def test_home_page_defines_api_key_status_helper(self, mock_tg_class):
+        """The home page should define the helper used by checkApiKeyStatus()."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+
+        client = app.test_client()
+        resp = client.get("/")
+
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data(as_text=True)
+        self.assertIn("function showApiKeyStatus(message)", html)
+
+    @patch("web_interface.TradingGraph")
+    def test_home_page_includes_favicon_link(self, mock_tg_class):
+        """The home page should declare a favicon to avoid 404 console noise."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+
+        client = app.test_client()
+        resp = client.get("/")
+
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data(as_text=True)
+        self.assertIn('rel="icon"', html)
 
 
 if __name__ == "__main__":
