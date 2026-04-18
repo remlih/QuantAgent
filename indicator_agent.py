@@ -10,6 +10,20 @@ from langchain_core.messages import ToolMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 
+def build_indicator_system_prompt(time_frame: str) -> str:
+    """Build the Spanish system prompt for indicator analysis."""
+    return (
+        "Eres un asistente analista de trading de alta frecuencia (HFT) que opera bajo condiciones sensibles al tiempo. "
+        "Debes analizar indicadores técnicos para respaldar una ejecución rápida de trading.\n\n"
+        "Tienes acceso a las herramientas: compute_rsi, compute_macd, compute_roc, compute_stoch y compute_willr. "
+        "Úsalas proporcionando argumentos adecuados como `kline_data` y los períodos correspondientes.\n\n"
+        f"⚠️ Los datos OHLC proporcionados corresponden a intervalos de {time_frame} y reflejan el comportamiento reciente del mercado. "
+        "Debes interpretarlos con rapidez y precisión.\n\n"
+        "Estos son los datos OHLC:\n{kline_data}.\n\n"
+        "Llama a las herramientas necesarias, analiza los resultados y Responde en español.\n"
+    )
+
+
 def create_indicator_agent(llm, toolkit):
     """
     Create an indicator analysis agent node for HFT. The agent uses LLM and indicator tools to analyze OHLCV data.
@@ -30,14 +44,7 @@ def create_indicator_agent(llm, toolkit):
             [
                 (
                     "system",
-                    "You are a high-frequency trading (HFT) analyst assistant operating under time-sensitive conditions. "
-                    "You must analyze technical indicators to support fast-paced trading execution.\n\n"
-                    "You have access to tools: compute_rsi, compute_macd, compute_roc, compute_stoch, and compute_willr. "
-                    "Use them by providing appropriate arguments like `kline_data` and the respective periods.\n\n"
-                    f"⚠️ The OHLC data provided is from a {time_frame} intervals, reflecting recent market behavior. "
-                    "You must interpret this data quickly and accurately.\n\n"
-                    "Here is the OHLC data:\n{kline_data}.\n\n"
-                    "Call necessary tools, and analyze the results.\n",
+                    build_indicator_system_prompt(time_frame),
                 ),
                 MessagesPlaceholder(variable_name="messages"),
             ]
@@ -47,7 +54,7 @@ def create_indicator_agent(llm, toolkit):
         # messages = state["messages"]
         messages = state.get("messages", [])
         if not messages:
-            messages = [HumanMessage(content="Begin indicator analysis.")]
+            messages = [HumanMessage(content="Inicia el análisis de indicadores y responde en español.")]
 
 
         # --- Step 1: Ask for tool calls ---
@@ -113,11 +120,11 @@ def create_indicator_agent(llm, toolkit):
                         report_content = msg.content
                         break
         else:
-            report_content = "Indicator analysis completed, but no detailed report was generated."
+            report_content = "El análisis de indicadores se completó, pero no se generó un reporte detallado."
 
         return {
             "messages": messages,
-            "indicator_report": report_content if report_content else "Indicator analysis completed.",
+            "indicator_report": report_content if report_content else "Análisis de indicadores completado.",
         }
 
     return indicator_agent_node

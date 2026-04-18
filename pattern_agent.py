@@ -7,6 +7,51 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from openai import RateLimitError
 
 
+def build_pattern_reference_text() -> str:
+    """Return the Spanish reference list of classic candlestick patterns."""
+    return """
+        Consulta los siguientes patrones clásicos de velas:
+
+        1. Hombro-cabeza-hombro invertido: tres mínimos donde el central es el más bajo; estructura simétrica que suele indicar una próxima tendencia alcista.
+        2. Doble suelo: dos mínimos similares con un rebote intermedio, formando una "W".
+        3. Suelo redondeado: caída gradual seguida de una subida gradual, formando una "U".
+        4. Base oculta: consolidación horizontal seguida de una ruptura alcista repentina.
+        5. Cuña descendente: el precio se estrecha a la baja y suele romper al alza.
+        6. Cuña ascendente: el precio sube lentamente pero converge, y suele romper a la baja.
+        7. Triángulo ascendente: línea de soporte ascendente con resistencia plana arriba; la ruptura suele ser alcista.
+        8. Triángulo descendente: resistencia descendente con soporte plano abajo; normalmente rompe a la baja.
+        9. Bandera alcista: tras una subida brusca, el precio consolida brevemente a la baja antes de continuar al alza.
+        10. Bandera bajista: tras una caída brusca, el precio consolida brevemente al alza antes de continuar a la baja.
+        11. Rectángulo: el precio fluctúa entre soporte y resistencia horizontales.
+        12. Reversión en isla: dos gaps en direcciones opuestas que forman una isla aislada de precio.
+        13. Reversión en V: caída brusca seguida de recuperación brusca, o viceversa.
+        14. Techo / suelo redondeado: formación gradual de techo o suelo en forma de arco.
+        15. Triángulo expansivo: máximos y mínimos cada vez más amplios, indicando oscilaciones volátiles.
+        16. Triángulo simétrico: máximos y mínimos convergen hacia el vértice y suelen anteceder una ruptura.
+        """
+
+
+def build_pattern_tool_system_prompt() -> str:
+    """Build the Spanish tool prompt for pattern generation."""
+    return (
+        "Eres un asistente de reconocimiento de patrones de trading encargado de identificar patrones clásicos de alta frecuencia. "
+        "Tienes acceso a la herramienta generate_kline_image. "
+        "Úsala con argumentos apropiados como `kline_data`.\n\n"
+        "Una vez generado el gráfico, compáralo con las descripciones de patrones clásicos, determina si hay algún patrón conocido presente y Responde en español."
+    )
+
+
+def build_pattern_image_prompt_text(time_frame: str, pattern_text: str) -> str:
+    """Build the Spanish image-analysis prompt for the pattern agent."""
+    return (
+        f"Este es un gráfico de velas de {time_frame} generado a partir de datos OHLC recientes del mercado.\n\n"
+        f"{pattern_text}\n\n"
+        "Determina si el gráfico coincide con alguno de los patrones enumerados. "
+        "Indica claramente el patrón o patrones detectados y explica tu razonamiento según la estructura, la tendencia y la simetría. "
+        "Responde en español."
+    )
+
+
 def invoke_tool_with_retry(tool_fn, tool_args, retries=3, wait_sec=4):
     """
     Invoke a tool function with retries if the result is missing an image.
@@ -33,26 +78,7 @@ def create_pattern_agent(tool_llm, graph_llm, toolkit):
         # --- Tool and pattern definitions ---
         tools = [toolkit.generate_kline_image]
         time_frame = state["time_frame"]
-        pattern_text = """
-        Please refer to the following classic candlestick patterns:
-
-        1. Inverse Head and Shoulders: Three lows with the middle one being the lowest, symmetrical structure, typically indicates an upcoming upward trend.
-        2. Double Bottom: Two similar low points with a rebound in between, forming a 'W' shape.
-        3. Rounded Bottom: Gradual price decline followed by a gradual rise, forming a 'U' shape.
-        4. Hidden Base: Horizontal consolidation followed by a sudden upward breakout.
-        5. Falling Wedge: Price narrows downward, usually breaks out upward.
-        6. Rising Wedge: Price rises slowly but converges, often breaks down.
-        7. Ascending Triangle: Rising support line with a flat resistance on top, breakout often occurs upward.
-        8. Descending Triangle: Falling resistance line with flat support at the bottom, typically breaks down.
-        9. Bullish Flag: After a sharp rise, price consolidates downward briefly before continuing upward.
-        10. Bearish Flag: After a sharp drop, price consolidates upward briefly before continuing downward.
-        11. Rectangle: Price fluctuates between horizontal support and resistance.
-        12. Island Reversal: Two price gaps in opposite directions forming an isolated price island.
-        13. V-shaped Reversal: Sharp decline followed by sharp recovery, or vice versa.
-        14. Rounded Top / Rounded Bottom: Gradual peaking or bottoming, forming an arc-shaped pattern.
-        15. Expanding Triangle: Highs and lows increasingly wider, indicating volatile swings.
-        16. Symmetrical Triangle: Highs and lows converge toward the apex, usually followed by a breakout.
-        """
+        pattern_text = build_pattern_reference_text()
 
         # --- Check for precomputed image in state ---
         pattern_image_b64 = state.get("pattern_image")
@@ -87,10 +113,7 @@ def create_pattern_agent(tool_llm, graph_llm, toolkit):
                 [
                     (
                         "system",
-                        "You are a trading pattern recognition assistant tasked with identifying classical high-frequency trading patterns. "
-                        "You have access to tool: generate_kline_image. "
-                        "Use it by providing appropriate arguments like `kline_data`\n\n"
-                        "Once the chart is generated, compare it to classical pattern descriptions and determine if any known pattern is present.",
+                        build_pattern_tool_system_prompt(),
                     ),
                     MessagesPlaceholder(variable_name="messages"),
                 ]
@@ -125,12 +148,7 @@ def create_pattern_agent(tool_llm, graph_llm, toolkit):
             image_prompt = [
                 {
                     "type": "text",
-                    "text": (
-                        f"This is a {time_frame} candlestick chart generated from recent OHLC market data.\n\n"
-                        f"{pattern_text}\n\n"
-                        "Determine whether the chart matches any of the patterns listed. "
-                        "Clearly name the matched pattern(s), and explain your reasoning based on structure, trend, and symmetry."
-                    ),
+                    "text": build_pattern_image_prompt_text(time_frame, pattern_text),
                 },
                 {
                     "type": "image_url",
@@ -150,7 +168,7 @@ def create_pattern_agent(tool_llm, graph_llm, toolkit):
             
             messages = [
                 SystemMessage(
-                    content="You are a trading pattern recognition assistant tasked with analyzing candlestick charts."
+                    content="Eres un asistente de reconocimiento de patrones de trading encargado de analizar gráficos de velas. Responde en español."
                 ),
                 human_msg,
             ]

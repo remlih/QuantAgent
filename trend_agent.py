@@ -10,6 +10,27 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from openai import RateLimitError
 
 
+def build_trend_tool_system_prompt() -> str:
+    """Build the Spanish tool prompt for trend analysis."""
+    return (
+        "Eres un asistente de reconocimiento de tendencias K-line que opera en un contexto de trading de alta frecuencia. "
+        "Primero debes llamar a la herramienta `generate_trend_image` usando `kline_data`. "
+        "Cuando el gráfico esté generado, analiza la imagen para detectar líneas de soporte/resistencia y patrones conocidos de velas. "
+        "Solo entonces debes predecir la tendencia de corto plazo (alcista, bajista o lateral). "
+        "No hagas ninguna predicción antes de generar y analizar la imagen. Responde en español."
+    )
+
+
+def build_trend_image_prompt_text(time_frame: str) -> str:
+    """Build the Spanish image-analysis prompt for the trend agent."""
+    return (
+        f"Este gráfico de velas ({time_frame} K-line) incluye líneas de tendencia automáticas: la **línea azul** es el soporte y la **línea roja** es la resistencia, ambas derivadas de precios de cierre recientes.\n\n"
+        "Analiza cómo interactúa el precio con estas líneas: ¿las velas rebotan, las atraviesan o se comprimen entre ellas?\n\n"
+        "Con base en la pendiente de las líneas, la separación entre ellas y el comportamiento reciente del K-line, predice la tendencia probable de corto plazo: **alcista**, **bajista** o **lateral**. "
+        "Sustenta tu predicción con señales y razonamiento claros. Responde en español."
+    )
+
+
 # --- Retry wrapper for LLM invocation ---
 def invoke_with_retry(call_fn, *args, retries=3, wait_sec=4):
     """
@@ -53,19 +74,13 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
             print("No precomputed trend image found in state, generating with tool...")
 
             # --- System prompt for LLM ---
-            system_prompt = (
-                "You are a K-line trend pattern recognition assistant operating in a high-frequency trading context. "
-                "You must first call the tool `generate_trend_image` using the provided `kline_data`. "
-                "Once the chart is generated, analyze the image for support/resistance trendlines and known candlestick patterns. "
-                "Only then should you proceed to make a prediction about the short-term trend (upward, downward, or sideways). "
-                "Do not make any predictions before generating and analyzing the image."
-            )
+            system_prompt = build_trend_tool_system_prompt()
 
             # --- Compose messages for the first round ---
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(
-                    content=f"Here is the recent kline data:\n{json.dumps(state['kline_data'], indent=2)}"
+                    content=f"Aquí están los datos K-line recientes:\n{json.dumps(state['kline_data'], indent=2)}"
                 ),
             ]
 
@@ -101,12 +116,7 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
             image_prompt = [
                 {
                     "type": "text",
-                    "text": (
-                        f"This candlestick ({time_frame} K-line) chart includes automated trendlines: the **blue line** is support, and the **red line** is resistance, both derived from recent closing prices.\n\n"
-                        "Analyze how price interacts with these lines — are candles bouncing off, breaking through, or compressing between them?\n\n"
-                        "Based on trendline slope, spacing, and recent K-line behavior, predict the likely short-term trend: **upward**, **downward**, or **sideways**. "
-                        "Support your prediction with respect to prediction, reasoning, signals."
-                    ),
+                    "text": build_trend_image_prompt_text(time_frame),
                 },
                 {
                     "type": "image_url",
@@ -126,8 +136,8 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
             
             messages = [
                 SystemMessage(
-                    content="You are a K-line trend pattern recognition assistant operating in a high-frequency trading context. "
-                    "Your task is to analyze candlestick charts annotated with support and resistance trendlines."
+                    content="Eres un asistente de reconocimiento de tendencias K-line en un contexto de trading de alta frecuencia. "
+                    "Tu tarea es analizar gráficos de velas anotados con líneas de soporte y resistencia. Responde en español."
                 ),
                 human_msg,
             ]
@@ -160,7 +170,7 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
             "trend_image": trend_image_b64,
             "trend_image_filename": "trend_graph.png",
             "trend_image_description": (
-                "Trend-enhanced candlestick chart with support/resistance lines"
+                "Gráfico de velas con líneas de soporte y resistencia"
                 if trend_image_b64
                 else None
             ),

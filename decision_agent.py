@@ -4,6 +4,90 @@ Combines indicator, pattern, and trend reports to issue a LONG or SHORT order.
 """
 
 
+def build_decision_prompt(
+    time_frame: str,
+    stock_name: str,
+    indicator_report: str,
+    pattern_report: str,
+    trend_report: str,
+) -> str:
+    """Build the Spanish decision prompt while preserving the JSON contract."""
+    return f"""Eres un analista cuantitativo de trading de alta frecuencia (HFT) que opera sobre el gráfico K-line actual de {time_frame} para {stock_name}. Tu tarea es emitir una **orden de ejecución inmediata**: **LONG** o **SHORT**. ⚠️ HOLD está prohibido por las restricciones HFT.
+
+            Tu decisión debe pronosticar el movimiento del mercado durante las **próximas N velas**, donde:
+            - Ejemplo: TIME_FRAME = 15min, N = 1 → Pronostica los próximos 15 minutos.
+            - TIME_FRAME = 4hour, N = 1 → Pronostica las próximas 4 horas.
+
+            Basa tu decisión en la fuerza combinada, la alineación y el timing de los tres reportes siguientes:
+
+            ---
+
+            ### 1. Reporte de indicadores técnicos:
+            - Evalúa el impulso (por ejemplo, MACD, ROC) y los osciladores (por ejemplo, RSI, Stochastic, Williams %R).
+            - Da **más peso a señales direccionales fuertes** como cruces de MACD, divergencias de RSI y niveles extremos de sobrecompra/sobreventa.
+            - **Ignora o reduce el peso** de señales neutrales o mixtas, salvo que coincidan entre varios indicadores.
+
+            ---
+
+            ### 2. Reporte de patrones:
+            - Solo actúa sobre patrones alcistas o bajistas si:
+            - El patrón es **claramente reconocible y está mayormente completo**, y
+            - Una **ruptura alcista o bajista ya está en marcha** o es altamente probable según el precio y el impulso (por ejemplo, mecha fuerte, pico de volumen, vela envolvente).
+            - **No actúes** sobre patrones tempranos o especulativos. No trates configuraciones en consolidación como operables salvo que exista **confirmación de ruptura** desde los otros reportes.
+
+            ---
+
+            ### 3. Reporte de tendencia:
+            - Analiza cómo interactúa el precio con el soporte y la resistencia:
+            - Una **línea de soporte con pendiente ascendente** sugiere interés comprador.
+            - Una **línea de resistencia con pendiente descendente** sugiere presión vendedora.
+            - Si el precio se comprime entre líneas de tendencia:
+            - Predice ruptura **solo cuando haya confluencia con velas fuertes o confirmación de indicadores**.
+            - **No asumas la dirección de ruptura** solo por la geometría.
+
+            ---
+
+            ### ✅ Estrategia de decisión
+
+            1. Actúa únicamente sobre señales **confirmadas**; evita señales emergentes, especulativas o conflictivas.
+            2. Prioriza decisiones donde **los tres reportes** (Indicadores, Patrones y Tendencia) **apunten en la misma dirección**.
+            3. Da más peso a:
+            - Impulso fuerte reciente (por ejemplo, cruce de MACD, ruptura de RSI)
+            - Acción decisiva del precio (por ejemplo, vela de ruptura, mechas de rechazo, rebote en soporte)
+            4. Si los reportes discrepan:
+            - Elige la dirección con **confirmación más fuerte y reciente**
+            - Prefiere señales respaldadas por impulso frente a pistas débiles de osciladores.
+            5. ⚖️ Si el mercado está en consolidación o los reportes están mezclados:
+            - Usa por defecto la **pendiente dominante de la tendencia** (por ejemplo, SHORT en un canal descendente).
+            - No adivines la dirección; elige el lado **más defendible**.
+            6. Sugiere una **relación riesgo/beneficio** razonable entre **1.2 y 1.8**, según la volatilidad actual y la fortaleza de la tendencia.
+
+            ---
+            ### 🧠 Formato de salida en JSON (para parsing del sistema)
+
+            Responde completamente en español, pero conserva **exactamente** estas claves JSON en inglés y usa `decision` con valor **LONG o SHORT**:
+
+            ```
+            {{
+            "forecast_horizon": "Pronosticando las próximas 3 velas (15 minutos, 1 hora, etc.)",
+            "decision": "<LONG or SHORT>",
+            "justification": "<Razón concisa y confirmada basada en los reportes>",
+            "risk_reward_ratio": "<float between 1.2 and 1.8>",
+            }}
+
+            --------
+            **Reporte de indicadores técnicos**  
+            {indicator_report}
+
+            **Reporte de patrones**  
+            {pattern_report}
+
+            **Reporte de tendencia**  
+            {trend_report}
+
+        """
+
+
 def create_final_trade_decider(llm):
     """
     Create a trade decision agent node. The agent uses LLM to synthesize indicator, pattern, and trend reports
@@ -18,78 +102,13 @@ def create_final_trade_decider(llm):
         stock_name = state["stock_name"]
 
         # --- System prompt for LLM ---
-        prompt = f"""You are a high-frequency quantitative trading (HFT) analyst operating on the current {time_frame} K-line chart for {stock_name}. Your task is to issue an **immediate execution order**: **LONG** or **SHORT**. ⚠️ HOLD is prohibited due to HFT constraints.
-
-            Your decision should forecast the market move over the **next N candlesticks**, where:
-            - For example: TIME_FRAME = 15min, N = 1 → Predict the next 15 minutes.
-            - TIME_FRAME = 4hour, N = 1 → Predict the next 4 hours.
-
-            Base your decision on the combined strength, alignment, and timing of the following three reports:
-
-            ---
-
-            ### 1. Technical Indicator Report:
-            - Evaluate momentum (e.g., MACD, ROC) and oscillators (e.g., RSI, Stochastic, Williams %R).
-            - Give **higher weight to strong directional signals** such as MACD crossovers, RSI divergence, extreme overbought/oversold levels.
-            - **Ignore or down-weight neutral or mixed signals** unless they align across multiple indicators.
-
-            ---
-
-            ### 2. Pattern Report:
-            - Only act on bullish or bearish patterns if:
-            - The pattern is **clearly recognizable and mostly complete**, and
-            - A **breakout or breakdown is already underway** or highly probable based on price and momentum (e.g., strong wick, volume spike, engulfing candle).
-            - **Do NOT act** on early-stage or speculative patterns. Do not treat consolidating setups as tradable unless there is **breakout confirmation** from other reports.
-
-            ---
-
-            ### 3. Trend Report:
-            - Analyze how price interacts with support and resistance:
-            - An **upward sloping support line** suggests buying interest.
-            - A **downward sloping resistance line** suggests selling pressure.
-            - If price is compressing between trendlines:
-            - Predict breakout **only when confluence exists with strong candles or indicator confirmation**.
-            - **Do NOT assume breakout direction** from geometry alone.
-
-            ---
-
-            ### ✅ Decision Strategy
-
-            1. Only act on **confirmed** signals — avoid emerging, speculative, or conflicting signals.
-            2. Prioritize decisions where **all three reports** (Indicator, Pattern, and Trend) **align in the same direction**.
-            3. Give more weight to:
-            - Recent strong momentum (e.g., MACD crossover, RSI breakout)
-            - Decisive price action (e.g., breakout candle, rejection wicks, support bounce)
-            4. If reports disagree:
-            - Choose the direction with **stronger and more recent confirmation**
-            - Prefer **momentum-backed signals** over weak oscillator hints.
-            5. ⚖️ If the market is in consolidation or reports are mixed:
-            - Default to the **dominant trendline slope** (e.g., SHORT in descending channel).
-            - Do not guess direction — choose the **more defensible** side.
-            6. Suggest a reasonable **risk-reward ratio** between **1.2 and 1.8**, based on current volatility and trend strength.
-
-            ---
-            ### 🧠 Output Format in json(for system parsing):
-
-            ```
-            {{
-            "forecast_horizon": "Predicting next 3 candlestick (15 minutes, 1 hour, etc.)",
-            "decision": "<LONG or SHORT>",
-            "justification": "<Concise, confirmed reasoning based on reports>",
-            "risk_reward_ratio": "<float between 1.2 and 1.8>",
-            }}
-
-            --------
-            **Technical Indicator Report**  
-            {indicator_report}
-
-            **Pattern Report**  
-            {pattern_report}
-
-            **Trend Report**  
-            {trend_report}
-
-        """
+        prompt = build_decision_prompt(
+            time_frame=time_frame,
+            stock_name=stock_name,
+            indicator_report=indicator_report,
+            pattern_report=pattern_report,
+            trend_report=trend_report,
+        )
 
         # --- LLM call for decision ---
         response = llm.invoke(prompt)
