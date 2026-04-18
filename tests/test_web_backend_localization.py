@@ -1,5 +1,6 @@
 """Tests for Spanish localization in backend-facing web messages."""
 
+import pandas as pd
 import os
 import sys
 import unittest
@@ -123,6 +124,136 @@ class TestWebBackendLocalization(unittest.TestCase):
         data = resp.get_json()
 
         self.assertEqual(data["error"], "La clave API es obligatoria")
+
+    @patch("web_interface.TradingGraph")
+    def test_analyze_route_hides_unexpected_exception_details(self, mock_tg_class):
+        """POST /api/analyze should not expose raw internal exception text."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+        analyzer.fetch_yfinance_data_with_datetime = MagicMock(
+            return_value=pd.DataFrame(
+                [
+                    {
+                        "Datetime": "2026-04-17 00:00:00",
+                        "Open": 1.0,
+                        "High": 2.0,
+                        "Low": 0.5,
+                        "Close": 1.5,
+                    }
+                ]
+            )
+        )
+        analyzer.run_analysis = MagicMock(side_effect=RuntimeError("internal boom"))
+
+        client = app.test_client()
+        resp = client.post(
+            "/api/analyze",
+            json={
+                "data_source": "live",
+                "asset": "BTC",
+                "timeframe": "1h",
+                "start_date": "2026-04-16",
+                "end_date": "2026-04-17",
+            },
+            content_type="application/json",
+        )
+        data = resp.get_json()
+
+        self.assertEqual(
+            data["error"],
+            "Ocurrió un error inesperado al procesar el análisis. Inténtalo de nuevo.",
+        )
+        self.assertNotIn("internal boom", data["error"])
+
+    @patch("web_interface.TradingGraph")
+    def test_update_provider_hides_internal_exception_details(self, mock_tg_class):
+        """POST /api/update-provider should return a localized generic error on failure."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+        analyzer.trading_graph.refresh_llms.side_effect = RuntimeError("provider boom")
+
+        client = app.test_client()
+        resp = client.post(
+            "/api/update-provider",
+            json={"provider": "openai"},
+            content_type="application/json",
+        )
+        data = resp.get_json()
+
+        self.assertEqual(
+            data["error"],
+            "No se pudo actualizar el proveedor en este momento. Inténtalo de nuevo.",
+        )
+        self.assertNotIn("provider boom", data["error"])
+
+    @patch("web_interface.TradingGraph")
+    def test_update_api_key_hides_internal_exception_details(self, mock_tg_class):
+        """POST /api/update-api-key should return a localized generic error on failure."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+        analyzer.trading_graph.update_api_key.side_effect = RuntimeError("key boom")
+
+        client = app.test_client()
+        resp = client.post(
+            "/api/update-api-key",
+            json={"provider": "openai", "api_key": "sk-test-1234"},
+            content_type="application/json",
+        )
+        data = resp.get_json()
+
+        self.assertEqual(
+            data["error"],
+            "No se pudo actualizar la clave API en este momento. Inténtalo de nuevo.",
+        )
+        self.assertNotIn("key boom", data["error"])
+
+    @patch("web_interface.TradingGraph")
+    def test_validate_api_key_hides_unexpected_provider_exception_details(self, mock_tg_class):
+        """validate_api_key() should avoid echoing unexpected provider errors."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import WebTradingAnalyzer
+
+        analyzer = WebTradingAnalyzer()
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-1234"}, clear=True):
+            with patch("openai.OpenAI") as mock_openai:
+                mock_client = MagicMock()
+                mock_client.chat.completions.create.side_effect = RuntimeError(
+                    "socket boom"
+                )
+                mock_openai.return_value = mock_client
+
+                result = analyzer.validate_api_key(provider="openai")
+
+        self.assertFalse(result["valid"])
+        self.assertEqual(
+            result["error"],
+            "❌ Error de clave API: no fue posible validar la clave API en este momento. Inténtalo de nuevo.",
+        )
+        self.assertNotIn("socket boom", result["error"])
 
 
 if __name__ == "__main__":

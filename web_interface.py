@@ -16,6 +16,27 @@ from trading_graph import TradingGraph, resolve_api_key
 
 app = Flask(__name__)
 
+GENERIC_ANALYSIS_ERROR = (
+    "❌ Error de análisis: no se pudo completar el análisis en este momento. "
+    "Inténtalo de nuevo."
+)
+GENERIC_ANALYSIS_ROUTE_ERROR = (
+    "Ocurrió un error inesperado al procesar el análisis. Inténtalo de nuevo."
+)
+GENERIC_API_KEY_ERROR = (
+    "❌ Error de clave API: no fue posible validar la clave API en este momento. "
+    "Inténtalo de nuevo."
+)
+GENERIC_API_KEY_ROUTE_ERROR = (
+    "No se pudo validar la clave API en este momento. Inténtalo de nuevo."
+)
+GENERIC_PROVIDER_UPDATE_ERROR = (
+    "No se pudo actualizar el proveedor en este momento. Inténtalo de nuevo."
+)
+GENERIC_API_KEY_UPDATE_ERROR = (
+    "No se pudo actualizar la clave API en este momento. Inténtalo de nuevo."
+)
+
 
 class WebTradingAnalyzer:
     def __init__(self):
@@ -377,7 +398,7 @@ class WebTradingAnalyzer:
                     "error": f"🌐 Error de red: no fue posible conectar con los servidores de {provider_name}. Verifica tu conexión a internet e inténtalo de nuevo.",
                 }
             else:
-                return {"success": False, "error": f"❌ Error de análisis: {error_msg}"}
+                return {"success": False, "error": GENERIC_ANALYSIS_ERROR}
 
     def extract_analysis_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Extract and format analysis results for web display."""
@@ -627,7 +648,7 @@ class WebTradingAnalyzer:
                     "error": f"🌐 Error de red: no fue posible conectar con los servidores de {provider_name}. Verifica tu conexión a internet.",
                 }
             else:
-                return {"valid": False, "error": f"❌ Error de clave API: {error_msg}"}
+                return {"valid": False, "error": GENERIC_API_KEY_ERROR}
 
     def load_custom_assets(self) -> list:
         """Load custom assets from persistent JSON file."""
@@ -804,7 +825,8 @@ def analyze():
 
         return jsonify(formatted_results)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        print(f"Error inesperado en /api/analyze: {str(e)}")
+        return jsonify({"error": GENERIC_ANALYSIS_ROUTE_ERROR})
 
 
 @app.route("/api/files/<asset>/<timeframe>")
@@ -966,7 +988,7 @@ def update_provider():
 
     except Exception as e:
         print(f"Error in update_provider: {str(e)}")
-        return jsonify({"error": str(e)})
+        return jsonify({"error": GENERIC_PROVIDER_UPDATE_ERROR})
 
 
 @app.route("/api/update-api-key", methods=["POST"])
@@ -1003,7 +1025,7 @@ def update_api_key():
 
     except Exception as e:
         print(f"Error in update_api_key: {str(e)}")
-        return jsonify({"error": str(e)})
+        return jsonify({"error": GENERIC_API_KEY_UPDATE_ERROR})
 
 
 @app.route("/api/get-api-key-status")
@@ -1066,7 +1088,8 @@ def validate_api_key():
         validation = analyzer.validate_api_key(provider=provider)
         return jsonify(validation)
     except Exception as e:
-        return jsonify({"valid": False, "error": str(e)})
+        print(f"Error in validate_api_key route: {str(e)}")
+        return jsonify({"valid": False, "error": GENERIC_API_KEY_ROUTE_ERROR})
 
 
 @app.route("/assets/<path:filename>")

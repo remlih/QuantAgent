@@ -36,6 +36,7 @@ class TestOutputPageLocalization(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         html = resp.get_data(as_text=True)
         self.assertIn('rel="icon"', html)
+        self.assertIn('<html lang="es">', html)
 
     @patch("web_interface.TradingGraph")
     def test_output_page_renders_core_sections_in_spanish(self, mock_tg_class):
@@ -116,6 +117,10 @@ class TestOutputPageLocalization(unittest.TestCase):
         self.assertIn("Visualización de tendencia no disponible.", html)
         self.assertNotIn('src="/api/images/pattern"', html)
         self.assertNotIn('src="/api/images/trend"', html)
+        self.assertIn('data-analysis-image-container="pattern"', html)
+        self.assertIn('data-analysis-image-container="trend"', html)
+        self.assertIn("restoreChartFromSessionStorage(", html)
+        self.assertIn('data-analysis-chart="${chartType}"', html)
 
 
 if __name__ == "__main__":

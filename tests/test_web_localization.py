@@ -37,6 +37,7 @@ class TestDemoPageLocalization(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         html = resp.get_data(as_text=True)
 
+        self.assertIn('<html lang="es">', html)
         self.assertIn("Iniciar análisis", html)
         self.assertIn("Configuración del análisis", html)
         self.assertIn("Selección de datos", html)

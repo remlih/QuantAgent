@@ -18,6 +18,7 @@ for mod_name in ["talib", "langchain_qwq"]:
         sys.modules[mod_name] = MagicMock()
 
 MINIMAX_API_KEY = os.environ.get("MINIMAX_API_KEY", "")
+MINIMAX_TEST_MODEL = os.environ.get("MINIMAX_TEST_MODEL", "MiniMax-M2.7")
 SKIP_REASON = "MINIMAX_API_KEY not set"
 
 
@@ -33,8 +34,8 @@ class TestMiniMaxIntegration(unittest.TestCase):
         config = DEFAULT_CONFIG.copy()
         config["agent_llm_provider"] = "minimax"
         config["graph_llm_provider"] = "minimax"
-        config["agent_llm_model"] = "MiniMax-M2.7"
-        config["graph_llm_model"] = "MiniMax-M2.7"
+        config["agent_llm_model"] = MINIMAX_TEST_MODEL
+        config["graph_llm_model"] = MINIMAX_TEST_MODEL
         config["minimax_api_key"] = MINIMAX_API_KEY
 
         tg = TradingGraph(config=config)
@@ -44,15 +45,15 @@ class TestMiniMaxIntegration(unittest.TestCase):
         self.assertIsInstance(tg.agent_llm, ChatOpenAI)
 
     def test_minimax_simple_invoke(self):
-        """Should successfully invoke MiniMax M2.7-highspeed for a simple query."""
+        """Should successfully invoke the configured MiniMax test model for a simple query."""
         from trading_graph import TradingGraph
         from default_config import DEFAULT_CONFIG
 
         config = DEFAULT_CONFIG.copy()
         config["agent_llm_provider"] = "minimax"
         config["graph_llm_provider"] = "minimax"
-        config["agent_llm_model"] = "MiniMax-M2.7-highspeed"
-        config["graph_llm_model"] = "MiniMax-M2.7-highspeed"
+        config["agent_llm_model"] = MINIMAX_TEST_MODEL
+        config["graph_llm_model"] = MINIMAX_TEST_MODEL
         config["minimax_api_key"] = MINIMAX_API_KEY
 
         tg = TradingGraph(config=config)
@@ -70,8 +71,8 @@ class TestMiniMaxIntegration(unittest.TestCase):
         config = DEFAULT_CONFIG.copy()
         config["agent_llm_provider"] = "minimax"
         config["graph_llm_provider"] = "minimax"
-        config["agent_llm_model"] = "MiniMax-M2.7-highspeed"
-        config["graph_llm_model"] = "MiniMax-M2.7-highspeed"
+        config["agent_llm_model"] = MINIMAX_TEST_MODEL
+        config["graph_llm_model"] = MINIMAX_TEST_MODEL
         config["minimax_api_key"] = MINIMAX_API_KEY
 
         tg = TradingGraph(config=config)
