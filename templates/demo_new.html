@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>QuantAgent - Multi-Agent Trading System</title>
+    <title>QuantAgent - Sistema de trading multiagente</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" type="image/png" href="{{ url_for('serve_assets', filename='darklogo.png') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -902,20 +902,20 @@
                                         
                                     </div>
                                     <div style="display: flex; align-items: center; justify-content: center; gap: 0rem; margin-bottom: 0.5rem;">
-                                        <img src="assets/darklogo.png" alt="QuantAgent Logo" style="width: 7rem; height: 7rem; object-fit: contain; background: transparent; box-shadow: none; border: none; border-radius: 0; transform: translateY(0.5rem);">
+                                        <img src="assets/darklogo.png" alt="Logo de QuantAgent" style="width: 7rem; height: 7rem; object-fit: contain; background: transparent; box-shadow: none; border: none; border-radius: 0; transform: translateY(0.5rem);">
                                         <span style="font-size: 4.0rem; font-weight: 700; color: white; line-height: 1.0;">QuantAgent:</span>
                                     </div>
                                     <div class="text-center">
-                                        <span class="title-highlight">Multi-Agent Trading System</span>
+                                        <span class="title-highlight">Sistema de trading multiagente</span>
                                     </div>
                                 </h1>
-                                <p class="text-lg text-white mb-8" style="font-size: 1.3rem; margin-top: 1.5rem;">Advanced multi-agent system combining technical indicators, pattern recognition, and trend analysis for comprehensive market insights.</p>
+                                <p class="text-lg text-white mb-8" style="font-size: 1.3rem; margin-top: 1.5rem;">Sistema multiagente avanzado que combina indicadores técnicos, reconocimiento de patrones y análisis de tendencia para ofrecer una visión integral del mercado.</p>
 
                                 <!-- Buttons -->
                                 <div class="max-w-xs mx-auto sm:max-w-none sm:flex sm:justify-center mb-12 md:mb-0">
                                     <div>
                                         <a class="hero-btn" href="#analysis">
-                                            <span class="hero-btn-text">Start Analysis</span>
+                                            <span class="hero-btn-text">Iniciar análisis</span>
                                             <span class="hero-btn-icon">
                                                 <i class="fas fa-arrow-right"></i>
                                             </span>
@@ -943,20 +943,20 @@
                     <!-- Analysis Form -->
                     <div class="form-section">
                         <h3 style="text-align: center; font-size: 1.6rem; font-weight: 600; color: var(--etrade-purple); margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
-                            <i class="fas fa-cog" style="font-size: 1.5rem; color: var(--etrade-purple-light);"></i> Analysis Configuration
+                            <i class="fas fa-cog" style="font-size: 1.5rem; color: var(--etrade-purple-light);"></i> Configuración del análisis
                         </h3>
                         
                         <!-- Panel 1: Data Selection -->
                         <div class="panel-group">
                             <div class="panel">
                                 <h4 class="panel-title">
-                                    <i class="fas fa-database"></i> Data Selection
+                                    <i class="fas fa-database"></i> Selección de datos
                                 </h4>
                                 
                                 <!-- Asset Selection -->
                                 <div class="form-group">
                                     <div class="form-label">
-                                        <i class="fas fa-coins"></i> Asset
+                                        <i class="fas fa-coins"></i> Activo
                                     </div>
                                     <div class="asset-button-grid" id="assetButtonGrid">
                                         <button type="button" class="asset-btn" data-asset="BTC" onclick="selectAsset(this, 'BTC')">
@@ -978,32 +978,32 @@
                                             <i class="fas fa-car"></i> TSLA
                                         </button>
                                         <button type="button" class="asset-btn custom-asset-btn" id="customAssetBtn" onclick="showCustomAssetInput()">
-                                            <i class="fas fa-plus"></i> Custom
+                                            <i class="fas fa-plus"></i> Personalizado
                                         </button>
                                     </div>
                                     
                                     <!-- Custom Asset Input -->
                                     <div id="customAssetDiv" class="mt-3" style="display: none;">
                                         <div class="alert alert-info">
-                                            <h6><i class="fas fa-plus-circle"></i> Custom Asset Symbol</h6>
-                                            <p class="mb-2"><strong>💡 Examples:</strong> NQ (Nasdaq-100 Futures), ZN (10-Year Treasury), etc.</p>
-                                            <p class="mb-0"><strong>📝 Format:</strong> Enter the Yahoo Finance symbol for your asset</p>
+                                            <h6><i class="fas fa-plus-circle"></i> Símbolo de activo personalizado</h6>
+                                            <p class="mb-2"><strong>💡 Ejemplos:</strong> NQ (futuros del Nasdaq-100), ZN (bono del Tesoro a 10 años), etc.</p>
+                                            <p class="mb-0"><strong>📝 Formato:</strong> Ingresa el símbolo de Yahoo Finance para tu activo</p>
                                         </div>
                                         <div class="input-group">
-                                            <label class="sr-only" for="customAssetInput">Custom asset symbol</label>
-                                            <input type="text" class="form-control" id="customAssetInput" placeholder="Enter symbol (e.g., NQ=F, ZN=F, ^VIX)">
+                                            <label class="sr-only" for="customAssetInput">Símbolo de activo personalizado</label>
+                                            <input type="text" class="form-control" id="customAssetInput" placeholder="Ingresa el símbolo (p. ej., NQ=F, ZN=F, ^VIX)">
                                             <button class="btn btn-outline-primary" type="button" onclick="confirmCustomAsset()">
-                                                <i class="fas fa-check"></i> Confirm
+                                                <i class="fas fa-check"></i> Confirmar
                                             </button>
                                         </div>
-                                        <small class="form-text text-muted">Use Yahoo Finance symbols. For futures, add =F suffix (e.g., NQ=F)</small>
+                                        <small class="form-text text-muted">Usa símbolos de Yahoo Finance. Para futuros, agrega el sufijo =F (p. ej., NQ=F)</small>
                                     </div>
                                 </div>
                                 
                                 <!-- Timeframe Selection -->
                                 <div class="form-group">
                                     <div class="form-label">
-                                        <i class="fas fa-chart-line"></i> Timeframe
+                                        <i class="fas fa-chart-line"></i> Intervalo
                                     </div>
                                     <div class="timeframe-selector">
                                         <button type="button" class="timeframe-btn" data-timeframe="1m" onclick="selectTimeframe(this, '1m')">
@@ -1034,22 +1034,22 @@
                             <!-- Panel 2: Date & Time Configuration -->
                             <div class="panel">
                                 <h4 class="panel-title">
-                                    <i class="fas fa-calendar-alt"></i> Date & Time Configuration
+                                    <i class="fas fa-calendar-alt"></i> Configuración de fecha y hora
                                 </h4>
                                 
                                 <!-- Date Range -->
                                 <div class="form-group">
                                     <div class="form-label" style="font-size: 1.2rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
-                                        <i class="fas fa-calendar-week" style="color: #6B7280; margin-right: 0.5rem;"></i> Date Range
+                                        <i class="fas fa-calendar-week" style="color: #6B7280; margin-right: 0.5rem;"></i> Rango de fechas
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <label class="sr-only" for="startDate">Start date</label>
-                                            <input type="date" id="startDate" class="form-control" aria-label="Start date" placeholder="mm/dd/yyyy" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="startDate">Fecha de inicio</label>
+                                            <input type="date" id="startDate" class="form-control" aria-label="Fecha de inicio" placeholder="dd/mm/aaaa" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="sr-only" for="endDate">End date</label>
-                                            <input type="date" id="endDate" class="form-control" aria-label="End date" placeholder="mm/dd/yyyy" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="endDate">Fecha de fin</label>
+                                            <input type="date" id="endDate" class="form-control" aria-label="Fecha de fin" placeholder="dd/mm/aaaa" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                     </div>
                                 </div>
@@ -1057,16 +1057,16 @@
                                 <!-- Time Selector -->
                                 <div class="form-group">
                                     <div class="form-label" style="font-size: 1.2rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
-                                        <i class="fas fa-clock" style="color: #6B7280; margin-right: 0.5rem;"></i> Time Selector
+                                        <i class="fas fa-clock" style="color: #6B7280; margin-right: 0.5rem;"></i> Selector de hora
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <label class="sr-only" for="startTime">Start time</label>
-                                            <input type="time" id="startTime" class="form-control" aria-label="Start time" value="00:00" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="startTime">Hora de inicio</label>
+                                            <input type="time" id="startTime" class="form-control" aria-label="Hora de inicio" value="00:00" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="sr-only" for="endTime">End time</label>
-                                            <input type="time" id="endTime" class="form-control" aria-label="End time" value="23:59" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="endTime">Hora de fin</label>
+                                            <input type="time" id="endTime" class="form-control" aria-label="Hora de fin" value="23:59" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                     </div>
                                 </div>
@@ -1076,7 +1076,7 @@
                                     <div class="form-check" style="margin-top: 1rem;">
                                         <input class="form-check-input" type="checkbox" id="useCurrentTime" checked style="transform: scale(1.2); margin-right: 0.75rem;">
                                         <label class="form-check-label" for="useCurrentTime" style="font-size: 1.3rem; font-weight: 500; color: #374151; cursor: pointer;">
-                                            Use current date & time for end
+                                            Usar la fecha y hora actuales como fin
                                         </label>
                                     </div>
                                 </div>
@@ -1098,12 +1098,12 @@
                         <div class="panel-group">
                             <div class="panel">
                                 <h4 class="panel-title">
-                                    <i class="fas fa-cog"></i> Settings
+                                    <i class="fas fa-cog"></i> Configuración
                                 </h4>
                                 
                                 <!-- LLM Provider Selection -->
                                 <div class="form-group">
-                                    <label class="form-label" for="llmProviderSelect">LLM Provider</label>
+                                    <label class="form-label" for="llmProviderSelect">Proveedor LLM</label>
                                     <select class="form-control" id="llmProviderSelect" onchange="handleProviderChange()">
                                         <option value="openai" selected>OpenAI</option>
                                         <option value="anthropic">Claude (Anthropic)</option>
@@ -1114,44 +1114,44 @@
                                 
                                 <!-- OpenAI API Key Input -->
                                 <div class="form-group" id="openaiApiKeyGroup">
-                                    <label class="form-label" for="openaiApiKeyInput">OpenAI API Key</label>
+                                    <label class="form-label" for="openaiApiKeyInput">Clave API de OpenAI</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="openaiApiKeyInput" placeholder="Enter your OpenAI API key">
+                                        <input type="password" class="form-control" id="openaiApiKeyInput" placeholder="Ingresa tu clave API de OpenAI">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('openai')">
-                                            <i class="fas fa-save"></i> Update
+                                            <i class="fas fa-save"></i> Actualizar
                                         </button>
                                     </div>
                                 </div>
                                 
                                 <!-- Anthropic API Key Input -->
                                 <div class="form-group" id="anthropicApiKeyGroup" style="display: none;">
-                                    <label class="form-label" for="anthropicApiKeyInput">Anthropic API Key</label>
+                                    <label class="form-label" for="anthropicApiKeyInput">Clave API de Anthropic</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="anthropicApiKeyInput" placeholder="Enter your Anthropic API key">
+                                        <input type="password" class="form-control" id="anthropicApiKeyInput" placeholder="Ingresa tu clave API de Anthropic">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('anthropic')">
-                                            <i class="fas fa-save"></i> Update
+                                            <i class="fas fa-save"></i> Actualizar
                                         </button>
                                     </div>
                                 </div>
                                 
                                 <!-- Qwen API Key Input -->
                                 <div class="form-group" id="qwenApiKeyGroup" style="display: none;">
-                                    <label class="form-label" for="qwenApiKeyInput">Qwen API Key (Dashscope)</label>
+                                    <label class="form-label" for="qwenApiKeyInput">Clave API de Qwen (Dashscope)</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="qwenApiKeyInput" placeholder="Enter your Qwen API key">
+                                        <input type="password" class="form-control" id="qwenApiKeyInput" placeholder="Ingresa tu clave API de Qwen">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('qwen')">
-                                            <i class="fas fa-save"></i> Update
+                                            <i class="fas fa-save"></i> Actualizar
                                         </button>
                                     </div>
                                 </div>
 
                                 <!-- MiniMax API Key Input -->
                                 <div class="form-group" id="minimaxApiKeyGroup" style="display: none;">
-                                    <label class="form-label" for="minimaxApiKeyInput">MiniMax API Key</label>
+                                    <label class="form-label" for="minimaxApiKeyInput">Clave API de MiniMax</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="minimaxApiKeyInput" placeholder="Enter your MiniMax API key">
+                                        <input type="password" class="form-control" id="minimaxApiKeyInput" placeholder="Ingresa tu clave API de MiniMax">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('minimax')">
-                                            <i class="fas fa-save"></i> Update
+                                            <i class="fas fa-save"></i> Actualizar
                                         </button>
                                     </div>
                                 </div>
@@ -1174,31 +1174,31 @@
                             <!-- Security Information Panel -->
                             <div class="panel security-panel">
                                 <h4 class="panel-title">
-                                    <i class="fas fa-shield-alt"></i> Security Information
+                                    <i class="fas fa-shield-alt"></i> Información de seguridad
                                 </h4>
                                 
                                 <div class="security-info">
                                     <div class="security-item">
                                         <i class="fas fa-server security-icon"></i>
                                         <div class="security-content">
-                                            <strong>Localhost Only</strong>
-                                            <p>This server runs exclusively on localhost (127.0.0.1)</p>
+                                            <strong>Solo localhost</strong>
+                                            <p>Este servidor se ejecuta exclusivamente en localhost (127.0.0.1)</p>
                                         </div>
                                     </div>
                                     
                                     <div class="security-item">
                                         <i class="fas fa-key security-icon"></i>
                                         <div class="security-content">
-                                            <strong>API Key Security</strong>
-                                            <p>Your API key is stored locally and never uploaded to external servers</p>
+                                            <strong>Seguridad de la clave API</strong>
+                                            <p>Tu clave API se almacena localmente y nunca se sube a servidores externos</p>
                                         </div>
                                     </div>
                                     
                                     <div class="security-item">
                                         <i class="fas fa-shield-alt security-icon"></i>
                                         <div class="security-content">
-                                            <strong>Data Privacy</strong>
-                                            <p>All analysis data remains on your local machine</p>
+                                            <strong>Privacidad de los datos</strong>
+                                            <p>Todos los datos del análisis permanecen en tu equipo local</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1208,7 +1208,7 @@
                         <!-- Run Analysis Button -->
                         <div class="text-center" style="margin-top: 2rem;">
                             <button class="btn btn-primary btn-lg" id="analyzeBtn" onclick="runAnalysis()" style="padding: 1.5rem 3rem; font-size: 1.3rem; border-radius: 15px;">
-                                <i class="fas fa-play"></i> Run Analysis
+                                <i class="fas fa-play"></i> Ejecutar análisis
                             </button>
                         </div>
                     </div>
@@ -1304,7 +1304,7 @@
             const customAsset = customAssetEl.value.trim();
 
             if (!customAsset) {
-                alert('Please enter a custom asset symbol.');
+                alert('Por favor, ingresa un símbolo de activo personalizado.');
                 return;
             }
 
@@ -1533,14 +1533,14 @@
                         console.error('API key status error:', data.error);
                         // Don't show error if it's just that no key is set
                         if (data.has_key === false) {
-                            showApiKeyError(`No ${providerName} API key found. Please enter your ${providerName} API key.`);
+                            showApiKeyError(`No se encontró una clave API de ${providerName}. Ingresa tu clave API de ${providerName}.`);
                         } else {
-                            showApiKeyError(`Error checking API key: ${data.error}`);
+                            showApiKeyError(`Error al comprobar la clave API: ${data.error}`);
                         }
                     } else if (data.has_key) {
-                        showApiKeyStatus(`${providerName} API key is set: ${data.masked_key}`);
+                        showApiKeyStatus(`La clave API de ${providerName} está configurada: ${data.masked_key}`);
                     } else {
-                        showApiKeyError(`No ${providerName} API key found. Please enter your ${providerName} API key.`);
+                        showApiKeyError(`No se encontró una clave API de ${providerName}. Ingresa tu clave API de ${providerName}.`);
                     }
                 })
                 .catch(error => {
@@ -1596,7 +1596,7 @@
              const customAsset = customAssetEl.value.trim();
 
              if (!customAsset) {
-                 alert('Please enter a custom asset symbol.');
+                 alert('Por favor, ingresa un símbolo de activo personalizado.');
                  return;
              }
 
@@ -1658,7 +1658,7 @@
              
              // Validate inputs
              if (!asset || !timeframe) {
-                 alert('Please select both asset and timeframe.');
+                 alert('Por favor, selecciona tanto un activo como un intervalo.');
                  return;
              }
              
@@ -1671,14 +1671,14 @@
              
              // Validate dates
              if (!startDate || !endDate) {
-                 alert('Please select both start and end dates.');
+                 alert('Por favor, selecciona las fechas de inicio y fin.');
                  return;
              }
              
              // Show loading state
              const analyzeBtn = document.getElementById('analyzeBtn');
              const originalText = analyzeBtn.innerHTML;
-             analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+             analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analizando...';
              analyzeBtn.disabled = true;
              
              // Prepare request data
@@ -1713,14 +1713,14 @@
                     window.location.href = data.redirect;
                  } else if (data.error) {
                      // Show error message
-                     alert('Analysis failed: ' + data.error);
+                     alert('El análisis falló: ' + data.error);
                      // Reset button
                      analyzeBtn.innerHTML = originalText;
                      analyzeBtn.disabled = false;
                  } else {
                      // Handle other responses
                      console.log('Analysis completed:', data);
-                     alert('Analysis completed successfully!');
+                     alert('¡Análisis completado con éxito!');
                      // Reset button
                      analyzeBtn.innerHTML = originalText;
                      analyzeBtn.disabled = false;
@@ -1728,7 +1728,7 @@
              })
              .catch(error => {
                  console.error('Error:', error);
-                 alert('An error occurred during analysis. Please try again.');
+                 alert('Ocurrió un error durante el análisis. Inténtalo de nuevo.');
                  // Reset button
                  analyzeBtn.innerHTML = originalText;
                  analyzeBtn.disabled = false;
@@ -1762,8 +1762,8 @@
                 endTimeInput.value = currentTime;
                 
                 // Add visual indication
-                endDateInput.title = 'Locked: Using current date/time';
-                endTimeInput.title = 'Locked: Using current date/time';
+                endDateInput.title = 'Bloqueado: usando la fecha y hora actuales';
+                endTimeInput.title = 'Bloqueado: usando la fecha y hora actuales';
             } else {
                 // Unlock both inputs
                 endTimeInput.readOnly = false;
@@ -1802,7 +1802,7 @@
             
             if (startDate && endDate && startDate > endDate) {
                 document.getElementById('dateRangeError').style.display = 'block';
-                document.getElementById('dateRangeErrorText').textContent = 'Start date cannot be after end date';
+                document.getElementById('dateRangeErrorText').textContent = 'La fecha de inicio no puede ser posterior a la fecha de fin';
             } else {
                 document.getElementById('dateRangeError').style.display = 'none';
             }
@@ -1890,7 +1890,7 @@
              }
              
              if (!apiKey) {
-                 showApiKeyError('Please enter an API key');
+                  showApiKeyError('Por favor, ingresa una clave API');
                  return;
              }
              
@@ -1900,7 +1900,7 @@
              // Show loading state
              const updateBtn = event.target.closest('button');
              const originalText = updateBtn.innerHTML;
-             updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+              updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
              updateBtn.disabled = true;
              
              // Make API call to update the key
@@ -1923,7 +1923,7 @@
                          'qwen': 'Qwen',
                          'minimax': 'MiniMax'
                      };
-                     showApiKeySuccess(`${providerNames[actualProvider] || actualProvider} API key updated successfully!`);
+                      showApiKeySuccess(`¡La clave API de ${providerNames[actualProvider] || actualProvider} se actualizó correctamente!`);
                      if (actualProvider === 'openai') {
                          document.getElementById('openaiApiKeyInput').value = '';
                      } else if (actualProvider === 'anthropic') {
@@ -1935,12 +1935,12 @@
                      }
                      checkApiKeyStatus();
                  } else {
-                     showApiKeyError(data.error || 'Failed to update API key');
+                      showApiKeyError(data.error || 'No se pudo actualizar la clave API');
                  }
              })
              .catch(error => {
                  console.error('Error:', error);
-                 showApiKeyError('An error occurred while updating the API key');
+                  showApiKeyError('Ocurrió un error al actualizar la clave API');
              })
              .finally(() => {
                  // Reset button

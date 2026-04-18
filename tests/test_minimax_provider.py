@@ -503,10 +503,10 @@ class TestWebInterfaceTemplateHelpers(unittest.TestCase):
         ):
             self.assertIn(f'for="{control_id}"', html)
         for aria_label in (
-            'aria-label="Start date"',
-            'aria-label="End date"',
-            'aria-label="Start time"',
-            'aria-label="End time"',
+            'aria-label="Fecha de inicio"',
+            'aria-label="Fecha de fin"',
+            'aria-label="Hora de inicio"',
+            'aria-label="Hora de fin"',
         ):
             self.assertIn(aria_label, html)
         self.assertNotIn('<label class="form-label">\n                                        <i class="fas fa-coins"></i> Asset', html)
