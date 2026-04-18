@@ -472,6 +472,46 @@ class TestWebInterfaceTemplateHelpers(unittest.TestCase):
         html = resp.get_data(as_text=True)
         self.assertIn('rel="icon"', html)
 
+    @patch("web_interface.TradingGraph")
+    def test_home_page_associates_labels_with_form_fields(self, mock_tg_class):
+        """Rendered form controls should have associated labels."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.trading_graph = mock_tg
+
+        client = app.test_client()
+        resp = client.get("/")
+
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data(as_text=True)
+        for control_id in (
+            "customAssetInput",
+            "startDate",
+            "endDate",
+            "startTime",
+            "endTime",
+            "llmProviderSelect",
+            "openaiApiKeyInput",
+            "anthropicApiKeyInput",
+            "qwenApiKeyInput",
+            "minimaxApiKeyInput",
+        ):
+            self.assertIn(f'for="{control_id}"', html)
+        for aria_label in (
+            'aria-label="Start date"',
+            'aria-label="End date"',
+            'aria-label="Start time"',
+            'aria-label="End time"',
+        ):
+            self.assertIn(aria_label, html)
+        self.assertNotIn('<label class="form-label">\n                                        <i class="fas fa-coins"></i> Asset', html)
+        self.assertNotIn('<label class="form-label">\n                                        <i class="fas fa-chart-line"></i> Timeframe', html)
+
 
 if __name__ == "__main__":
     unittest.main()

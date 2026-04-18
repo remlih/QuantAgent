@@ -88,6 +88,17 @@
         .text-center { text-align: center; }
         .md\:text-left { text-align: left; }
         .md\:w-\[600px\] { width: 600px; }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
         .h1 { font-size: 3rem; font-weight: 700; line-height: 1.2; }
         .text-white { color: #ffffff; }
         .mb-6 { margin-bottom: 1.5rem; }
@@ -944,9 +955,9 @@
                                 
                                 <!-- Asset Selection -->
                                 <div class="form-group">
-                                    <label class="form-label">
+                                    <div class="form-label">
                                         <i class="fas fa-coins"></i> Asset
-                                    </label>
+                                    </div>
                                     <div class="asset-button-grid" id="assetButtonGrid">
                                         <button type="button" class="asset-btn" data-asset="BTC" onclick="selectAsset(this, 'BTC')">
                                             <i class="fas fa-bitcoin"></i> BTC
@@ -979,6 +990,7 @@
                                             <p class="mb-0"><strong>📝 Format:</strong> Enter the Yahoo Finance symbol for your asset</p>
                                         </div>
                                         <div class="input-group">
+                                            <label class="sr-only" for="customAssetInput">Custom asset symbol</label>
                                             <input type="text" class="form-control" id="customAssetInput" placeholder="Enter symbol (e.g., NQ=F, ZN=F, ^VIX)">
                                             <button class="btn btn-outline-primary" type="button" onclick="confirmCustomAsset()">
                                                 <i class="fas fa-check"></i> Confirm
@@ -990,9 +1002,9 @@
                                 
                                 <!-- Timeframe Selection -->
                                 <div class="form-group">
-                                    <label class="form-label">
+                                    <div class="form-label">
                                         <i class="fas fa-chart-line"></i> Timeframe
-                                    </label>
+                                    </div>
                                     <div class="timeframe-selector">
                                         <button type="button" class="timeframe-btn" data-timeframe="1m" onclick="selectTimeframe(this, '1m')">
                                             1m
@@ -1027,30 +1039,34 @@
                                 
                                 <!-- Date Range -->
                                 <div class="form-group">
-                                    <label class="form-label" style="font-size: 1.2rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
+                                    <div class="form-label" style="font-size: 1.2rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
                                         <i class="fas fa-calendar-week" style="color: #6B7280; margin-right: 0.5rem;"></i> Date Range
-                                    </label>
+                                    </div>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <input type="date" id="startDate" class="form-control" placeholder="mm/dd/yyyy" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="startDate">Start date</label>
+                                            <input type="date" id="startDate" class="form-control" aria-label="Start date" placeholder="mm/dd/yyyy" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                         <div class="col-md-6">
-                                            <input type="date" id="endDate" class="form-control" placeholder="mm/dd/yyyy" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="endDate">End date</label>
+                                            <input type="date" id="endDate" class="form-control" aria-label="End date" placeholder="mm/dd/yyyy" required style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Time Selector -->
                                 <div class="form-group">
-                                    <label class="form-label" style="font-size: 1.2rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
+                                    <div class="form-label" style="font-size: 1.2rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
                                         <i class="fas fa-clock" style="color: #6B7280; margin-right: 0.5rem;"></i> Time Selector
-                                    </label>
+                                    </div>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <input type="time" id="startTime" class="form-control" value="00:00" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="startTime">Start time</label>
+                                            <input type="time" id="startTime" class="form-control" aria-label="Start time" value="00:00" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                         <div class="col-md-6">
-                                            <input type="time" id="endTime" class="form-control" value="23:59" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
+                                            <label class="sr-only" for="endTime">End time</label>
+                                            <input type="time" id="endTime" class="form-control" aria-label="End time" value="23:59" step="60" style="font-size: 1.1rem; padding: 0.875rem 1rem; border: 2px solid #E5E7EB; border-radius: 8px;">
                                         </div>
                                     </div>
                                 </div>
@@ -1087,7 +1103,7 @@
                                 
                                 <!-- LLM Provider Selection -->
                                 <div class="form-group">
-                                    <label class="form-label">LLM Provider</label>
+                                    <label class="form-label" for="llmProviderSelect">LLM Provider</label>
                                     <select class="form-control" id="llmProviderSelect" onchange="handleProviderChange()">
                                         <option value="openai" selected>OpenAI</option>
                                         <option value="anthropic">Claude (Anthropic)</option>
@@ -1098,7 +1114,7 @@
                                 
                                 <!-- OpenAI API Key Input -->
                                 <div class="form-group" id="openaiApiKeyGroup">
-                                    <label class="form-label">OpenAI API Key</label>
+                                    <label class="form-label" for="openaiApiKeyInput">OpenAI API Key</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control" id="openaiApiKeyInput" placeholder="Enter your OpenAI API key">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('openai')">
@@ -1109,7 +1125,7 @@
                                 
                                 <!-- Anthropic API Key Input -->
                                 <div class="form-group" id="anthropicApiKeyGroup" style="display: none;">
-                                    <label class="form-label">Anthropic API Key</label>
+                                    <label class="form-label" for="anthropicApiKeyInput">Anthropic API Key</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control" id="anthropicApiKeyInput" placeholder="Enter your Anthropic API key">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('anthropic')">
@@ -1120,7 +1136,7 @@
                                 
                                 <!-- Qwen API Key Input -->
                                 <div class="form-group" id="qwenApiKeyGroup" style="display: none;">
-                                    <label class="form-label">Qwen API Key (Dashscope)</label>
+                                    <label class="form-label" for="qwenApiKeyInput">Qwen API Key (Dashscope)</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control" id="qwenApiKeyInput" placeholder="Enter your Qwen API key">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('qwen')">
@@ -1131,7 +1147,7 @@
 
                                 <!-- MiniMax API Key Input -->
                                 <div class="form-group" id="minimaxApiKeyGroup" style="display: none;">
-                                    <label class="form-label">MiniMax API Key</label>
+                                    <label class="form-label" for="minimaxApiKeyInput">MiniMax API Key</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control" id="minimaxApiKeyInput" placeholder="Enter your MiniMax API key">
                                         <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('minimax')">
@@ -1726,10 +1742,16 @@
             
             if (useCurrentTime.checked) {
                 // Lock both end date and end time
-                endTimeInput.disabled = true;
-                endDateInput.disabled = true;
+                endTimeInput.readOnly = true;
+                endDateInput.readOnly = true;
+                endTimeInput.setAttribute('aria-disabled', 'true');
+                endDateInput.setAttribute('aria-disabled', 'true');
+                endTimeInput.tabIndex = -1;
+                endDateInput.tabIndex = -1;
                 endTimeInput.style.opacity = '0.5';
                 endDateInput.style.opacity = '0.5';
+                endTimeInput.style.pointerEvents = 'none';
+                endDateInput.style.pointerEvents = 'none';
                 
                 // Set to current date and time
                 const now = new Date();
@@ -1744,10 +1766,16 @@
                 endTimeInput.title = 'Locked: Using current date/time';
             } else {
                 // Unlock both inputs
-                endTimeInput.disabled = false;
-                endDateInput.disabled = false;
+                endTimeInput.readOnly = false;
+                endDateInput.readOnly = false;
+                endTimeInput.setAttribute('aria-disabled', 'false');
+                endDateInput.setAttribute('aria-disabled', 'false');
+                endTimeInput.tabIndex = 0;
+                endDateInput.tabIndex = 0;
                 endTimeInput.style.opacity = '1';
                 endDateInput.style.opacity = '1';
+                endTimeInput.style.pointerEvents = 'auto';
+                endDateInput.style.pointerEvents = 'auto';
                 
                 // Remove visual indication
                 endDateInput.title = '';
