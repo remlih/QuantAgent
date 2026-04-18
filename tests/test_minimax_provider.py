@@ -425,7 +425,7 @@ class TestWebTradingAnalyzerRunAnalysis(unittest.TestCase):
         result = analyzer.run_analysis(df, "BTC", "1h")
 
         self.assertFalse(result["success"])
-        self.assertIn("not set", result["error"])
+        self.assertIn("no está configurada", result["error"])
         mock_kline_image.assert_not_called()
         mock_trend_image.assert_not_called()
         mock_tg.graph.invoke.assert_not_called()

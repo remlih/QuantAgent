@@ -255,7 +255,7 @@ class WebTradingAnalyzer:
             if not all(col in df_slice.columns for col in required_columns):
                 return {
                     "success": False,
-                    "error": f"Missing required columns. Available: {list(df_slice.columns)}",
+                    "error": f"Faltan columnas obligatorias. Disponibles: {list(df_slice.columns)}",
                 }
 
             # Reset index to avoid any MultiIndex issues
@@ -308,7 +308,7 @@ class WebTradingAnalyzer:
                     provider_name = provider_names.get(provider, provider)
                     return {
                         "success": False,
-                        "error": f"❌ Invalid API Key: The {provider_name} API key is not set. Please update it in the Settings section.",
+                        "error": f"❌ Clave API inválida: la clave API de {provider_name} no está configurada. Actualízala en la sección Configuración.",
                     }
 
             p_image = static_util.generate_kline_image(df_slice_dict)
@@ -359,25 +359,25 @@ class WebTradingAnalyzer:
             ):
                 return {
                     "success": False,
-                    "error": f"❌ Invalid API Key: The {provider_name} API key you provided is invalid or has expired. Please check your API key in the Settings section and try again.",
+                    "error": f"❌ Clave API inválida: la clave API de {provider_name} que proporcionaste es inválida o ha vencido. Revísala en la sección Configuración e inténtalo de nuevo.",
                 }
             elif "rate limit" in error_msg.lower() or "429" in error_msg:
                 return {
                     "success": False,
-                    "error": f"⚠️ Rate Limit Exceeded: You've hit the {provider_name} API rate limit. Please wait a moment and try again.",
+                    "error": f"⚠️ Límite de tasa excedido: alcanzaste el límite de la API de {provider_name}. Espera un momento e inténtalo de nuevo.",
                 }
             elif "quota" in error_msg.lower() or "billing" in error_msg.lower():
                 return {
                     "success": False,
-                    "error": f"💳 Billing Issue: Your {provider_name} account has insufficient credits or billing issues. Please check your {provider_name} account.",
+                    "error": f"💳 Problema de facturación: tu cuenta de {provider_name} no tiene créditos suficientes o presenta problemas de facturación. Revisa tu cuenta de {provider_name}.",
                 }
             elif "network" in error_msg.lower() or "connection" in error_msg.lower():
                 return {
                     "success": False,
-                    "error": f"🌐 Network Error: Unable to connect to {provider_name} servers. Please check your internet connection and try again.",
+                    "error": f"🌐 Error de red: no fue posible conectar con los servidores de {provider_name}. Verifica tu conexión a internet e inténtalo de nuevo.",
                 }
             else:
-                return {"success": False, "error": f"❌ Analysis Error: {error_msg}"}
+                return {"success": False, "error": f"❌ Error de análisis: {error_msg}"}
 
     def extract_analysis_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Extract and format analysis results for web display."""
@@ -443,25 +443,25 @@ class WebTradingAnalyzer:
     def get_timeframe_date_limits(self, timeframe: str) -> Dict[str, Any]:
         """Get valid date range limits for a given timeframe."""
         limits = {
-            "1m": {"max_days": 7, "description": "1 minute data: max 7 days"},
-            "2m": {"max_days": 60, "description": "2 minute data: max 60 days"},
-            "5m": {"max_days": 60, "description": "5 minute data: max 60 days"},
-            "15m": {"max_days": 60, "description": "15 minute data: max 60 days"},
-            "30m": {"max_days": 60, "description": "30 minute data: max 60 days"},
-            "60m": {"max_days": 730, "description": "1 hour data: max 730 days"},
-            "90m": {"max_days": 60, "description": "90 minute data: max 60 days"},
-            "1h": {"max_days": 730, "description": "1 hour data: max 730 days"},
-            "4h": {"max_days": 730, "description": "4 hour data: max 730 days"},
-            "1d": {"max_days": 730, "description": "1 day data: max 730 days"},
-            "5d": {"max_days": 60, "description": "5 day data: max 60 days"},
-            "1w": {"max_days": 730, "description": "1 week data: max 730 days"},
-            "1wk": {"max_days": 730, "description": "1 week data: max 730 days"},
-            "1mo": {"max_days": 730, "description": "1 month data: max 730 days"},
-            "3mo": {"max_days": 730, "description": "3 month data: max 730 days"},
+            "1m": {"max_days": 7, "description": "datos de 1 minuto: máximo 7 días"},
+            "2m": {"max_days": 60, "description": "datos de 2 minutos: máximo 60 días"},
+            "5m": {"max_days": 60, "description": "datos de 5 minutos: máximo 60 días"},
+            "15m": {"max_days": 60, "description": "datos de 15 minutos: máximo 60 días"},
+            "30m": {"max_days": 60, "description": "datos de 30 minutos: máximo 60 días"},
+            "60m": {"max_days": 730, "description": "datos de 1 hora: máximo 730 días"},
+            "90m": {"max_days": 60, "description": "datos de 90 minutos: máximo 60 días"},
+            "1h": {"max_days": 730, "description": "datos de 1 hora: máximo 730 días"},
+            "4h": {"max_days": 730, "description": "datos de 4 horas: máximo 730 días"},
+            "1d": {"max_days": 730, "description": "datos de 1 día: máximo 730 días"},
+            "5d": {"max_days": 60, "description": "datos de 5 días: máximo 60 días"},
+            "1w": {"max_days": 730, "description": "datos de 1 semana: máximo 730 días"},
+            "1wk": {"max_days": 730, "description": "datos de 1 semana: máximo 730 días"},
+            "1mo": {"max_days": 730, "description": "datos de 1 mes: máximo 730 días"},
+            "3mo": {"max_days": 730, "description": "datos de 3 meses: máximo 730 días"},
         }
 
         return limits.get(
-            timeframe, {"max_days": 730, "description": "Default: max 730 days"}
+            timeframe, {"max_days": 730, "description": "predeterminado: máximo 730 días"}
         )
 
     def validate_date_range(
@@ -484,7 +484,7 @@ class WebTradingAnalyzer:
             if start >= end:
                 return {
                     "valid": False,
-                    "error": "Start date/time must be before end date/time",
+                    "error": "La fecha/hora de inicio debe ser anterior a la fecha/hora de fin",
                 }
 
             # Get timeframe limits
@@ -498,7 +498,7 @@ class WebTradingAnalyzer:
             if days_diff > max_days:
                 return {
                     "valid": False,
-                    "error": f"Time range too large. {limits['description']}. Please select a smaller range.",
+                    "error": f"El rango de tiempo es demasiado grande. {limits['description']}. Selecciona un rango menor.",
                     "max_days": max_days,
                     "current_days": round(days_diff, 2),
                 }
@@ -506,7 +506,7 @@ class WebTradingAnalyzer:
             return {"valid": True, "days": round(days_diff, 2)}
 
         except ValueError as e:
-            return {"valid": False, "error": f"Invalid date/time format: {str(e)}"}
+            return {"valid": False, "error": f"Formato de fecha/hora inválido: {str(e)}"}
 
     def validate_api_key(self, provider: str = None) -> Dict[str, Any]:
         """Validate the current API key by making a simple test call."""
@@ -521,7 +521,7 @@ class WebTradingAnalyzer:
                 if not api_key:
                     return {
                         "valid": False,
-                        "error": "❌ Invalid API Key: The OpenAI API key is not set. Please update it in the Settings section.",
+                        "error": "❌ Clave API inválida: la clave API de OpenAI no está configurada. Actualízala en la sección Configuración.",
                     }
 
                 client = OpenAI(api_key=api_key)
@@ -540,7 +540,7 @@ class WebTradingAnalyzer:
                 if not api_key:
                     return {
                         "valid": False,
-                        "error": "❌ Invalid API Key: The Anthropic API key is not set. Please update it in the Settings section.",
+                        "error": "❌ Clave API inválida: la clave API de Anthropic no está configurada. Actualízala en la sección Configuración.",
                     }
                 
                 client = Anthropic(api_key=api_key)
@@ -559,7 +559,7 @@ class WebTradingAnalyzer:
                 if not api_key:
                     return {
                         "valid": False,
-                        "error": "❌ Invalid API Key: The Qwen API key is not set. Please update it in the Settings section.",
+                        "error": "❌ Clave API inválida: la clave API de Qwen no está configurada. Actualízala en la sección Configuración.",
                     }
 
                 # Make a simple test call using LangChain
@@ -573,7 +573,7 @@ class WebTradingAnalyzer:
                 if not api_key:
                     return {
                         "valid": False,
-                        "error": "❌ Invalid API Key: The MiniMax API key is not set. Please update it in the Settings section.",
+                        "error": "❌ Clave API inválida: la clave API de MiniMax no está configurada. Actualízala en la sección Configuración.",
                     }
 
                 client = _OpenAI(api_key=api_key, base_url="https://api.minimax.io/v1")
@@ -584,7 +584,7 @@ class WebTradingAnalyzer:
                 )
 
                 provider_name = "MiniMax"
-            return {"valid": True, "message": f"{provider_name} API key is valid"}
+            return {"valid": True, "message": f"La clave API de {provider_name} es válida"}
 
         except Exception as e:
             error_msg = str(e)
@@ -609,25 +609,25 @@ class WebTradingAnalyzer:
             ):
                 return {
                     "valid": False,
-                    "error": f"❌ Invalid API Key: The {provider_name} API key is invalid or has expired. Please update it in the Settings section.",
+                    "error": f"❌ Clave API inválida: la clave API de {provider_name} es inválida o ha vencido. Actualízala en la sección Configuración.",
                 }
             elif "rate limit" in error_msg.lower() or "429" in error_msg:
                 return {
                     "valid": False,
-                    "error": f"⚠️ Rate Limit Exceeded: You've hit the {provider_name} API rate limit. Please wait a moment and try again.",
+                    "error": f"⚠️ Límite de tasa excedido: alcanzaste el límite de la API de {provider_name}. Espera un momento e inténtalo de nuevo.",
                 }
             elif "quota" in error_msg.lower() or "billing" in error_msg.lower():
                 return {
                     "valid": False,
-                    "error": f"💳 Billing Issue: Your {provider_name} account has insufficient credits or billing issues. Please check your {provider_name} account.",
+                    "error": f"💳 Problema de facturación: tu cuenta de {provider_name} no tiene créditos suficientes o presenta problemas de facturación. Revisa tu cuenta de {provider_name}.",
                 }
             elif "network" in error_msg.lower() or "connection" in error_msg.lower():
                 return {
                     "valid": False,
-                    "error": f"🌐 Network Error: Unable to connect to {provider_name} servers. Please check your internet connection.",
+                    "error": f"🌐 Error de red: no fue posible conectar con los servidores de {provider_name}. Verifica tu conexión a internet.",
                 }
             else:
-                return {"valid": False, "error": f"❌ API Key Error: {error_msg}"}
+                return {"valid": False, "error": f"❌ Error de clave API: {error_msg}"}
 
     def load_custom_assets(self) -> list:
         """Load custom assets from persistent JSON file."""
@@ -724,7 +724,7 @@ def analyze():
         redirect_to_output = data.get("redirect_to_output", False)
 
         if data_source != "live":
-            return jsonify({"error": "Only live Yahoo Finance data is supported."})
+            return jsonify({"error": "Solo se admiten datos en vivo de Yahoo Finance."})
 
         # Live Yahoo Finance data only
         start_date = data.get("start_date")
@@ -739,10 +739,10 @@ def analyze():
             try:
                 start_dt = datetime.strptime(start_datetime_str, "%Y-%m-%d %H:%M")
             except ValueError:
-                return jsonify({"error": "Invalid start date/time format."})
+                return jsonify({"error": "Formato inválido para la fecha/hora de inicio."})
 
             if start_dt > datetime.now():
-                return jsonify({"error": "Start date/time cannot be in the future."})
+                return jsonify({"error": "La fecha/hora de inicio no puede estar en el futuro."})
 
         if end_date:
             if use_current_time:
@@ -752,14 +752,14 @@ def analyze():
                 try:
                     end_dt = datetime.strptime(end_datetime_str, "%Y-%m-%d %H:%M")
                 except ValueError:
-                    return jsonify({"error": "Invalid end date/time format."})
+                    return jsonify({"error": "Formato inválido para la fecha/hora de fin."})
 
                 if end_dt > datetime.now():
-                    return jsonify({"error": "End date/time cannot be in the future."})
+                    return jsonify({"error": "La fecha/hora de fin no puede estar en el futuro."})
 
             if start_date and start_dt and end_dt and end_dt < start_dt:
                 return jsonify(
-                    {"error": "End date/time cannot be earlier than start date/time."}
+                    {"error": "La fecha/hora de fin no puede ser anterior a la fecha/hora de inicio."}
                 )
 
         # Fetch data with datetime objects
@@ -767,7 +767,7 @@ def analyze():
             asset, timeframe, start_dt, end_dt
         )
         if df.empty:
-            return jsonify({"error": "No data available for the specified parameters"})
+            return jsonify({"error": "No hay datos disponibles para los parámetros especificados"})
 
         display_name = analyzer.asset_mapping.get(asset, asset)
         if display_name is None:
@@ -799,7 +799,7 @@ def analyze():
                 )
             else:
                 return jsonify(
-                    {"error": formatted_results.get("error", "Analysis failed")}
+                    {"error": formatted_results.get("error", "El análisis falló")}
                 )
 
         return jsonify(formatted_results)
@@ -834,11 +834,11 @@ def save_custom_asset():
         data = request.get_json()
         symbol = (data.get("symbol") or "").strip()
         if not symbol:
-            return jsonify({"success": False, "error": "Symbol required"}), 400
+            return jsonify({"success": False, "error": "El símbolo es obligatorio"}), 400
 
         ok = analyzer.save_custom_asset(symbol)
         if not ok:
-            return jsonify({"success": False, "error": "Failed to save symbol"}), 500
+            return jsonify({"success": False, "error": "No se pudo guardar el símbolo"}), 500
 
         return jsonify({"success": True, "symbol": symbol})
     except Exception as e:
@@ -898,7 +898,7 @@ def validate_date_range():
         end_time = data.get("end_time", "23:59")
 
         if not all([start_date, end_date, timeframe]):
-            return jsonify({"error": "Missing required parameters"})
+            return jsonify({"error": "Faltan parámetros obligatorios"})
 
         validation = analyzer.validate_date_range(
             start_date, end_date, timeframe, start_time, end_time
@@ -917,7 +917,7 @@ def update_provider():
         provider = data.get("provider", "openai")
 
         if provider not in ["openai", "anthropic", "qwen", "minimax"]:
-            return jsonify({"error": "Provider must be 'openai', 'anthropic', 'qwen', or 'minimax'"})
+            return jsonify({"error": "El proveedor debe ser 'openai', 'anthropic', 'qwen' o 'minimax'"})
 
         print(f"Updating provider to: {provider}")
 
@@ -962,7 +962,7 @@ def update_provider():
         print(f"Provider updated to {provider} successfully")
         print(f"graph_llm_model updated to {analyzer.config['graph_llm_model']} successfully")
         print(f"agent_llm updated to {analyzer.config['agent_llm_model']} successfully")
-        return jsonify({"success": True, "message": f"Provider updated to {provider}"})
+        return jsonify({"success": True, "message": f"Proveedor actualizado a {provider}"})
 
     except Exception as e:
         print(f"Error in update_provider: {str(e)}")
@@ -978,10 +978,10 @@ def update_api_key():
         provider = data.get("provider", "openai")  # Default to "openai" for backward compatibility
 
         if not new_api_key:
-            return jsonify({"error": "API key is required"})
+            return jsonify({"error": "La clave API es obligatoria"})
 
         if provider not in ["openai", "anthropic", "qwen", "minimax"]:
-            return jsonify({"error": "Provider must be 'openai', 'anthropic', 'qwen', or 'minimax'"})
+            return jsonify({"error": "El proveedor debe ser 'openai', 'anthropic', 'qwen' o 'minimax'"})
 
         print(f"Updating {provider} API key to: {new_api_key[:8]}...{new_api_key[-4:]}")
 
@@ -999,7 +999,7 @@ def update_api_key():
         analyzer.trading_graph.update_api_key(new_api_key, provider=provider)
 
         print(f"{provider} API key updated successfully")
-        return jsonify({"success": True, "message": f"{provider.capitalize()} API key updated successfully"})
+        return jsonify({"success": True, "message": f"La clave API de {provider.capitalize()} se actualizó correctamente"})
 
     except Exception as e:
         print(f"Error in update_api_key: {str(e)}")
@@ -1046,10 +1046,10 @@ def get_image(image_type):
         elif image_type == "trend_chart":
             image_path = "trend_chart.png"
         else:
-            return jsonify({"error": "Invalid image type"})
+            return jsonify({"error": "Tipo de imagen inválido"})
 
         if not os.path.exists(image_path):
-            return jsonify({"error": "Image not found"})
+            return jsonify({"error": "Imagen no encontrada"})
 
         return send_file(image_path, mimetype="image/png")
 
@@ -1075,7 +1075,7 @@ def serve_assets(filename):
     try:
         return send_file(f"assets/{filename}")
     except FileNotFoundError:
-        return jsonify({"error": "Asset not found"}), 404
+        return jsonify({"error": "Activo no encontrado"}), 404
 
 
 if __name__ == "__main__":
