@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <title>QuantAgent - Sistema de trading multiagente</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="QuantAgent combina indicadores técnicos, patrones y tendencias para analizar mercados desde una interfaz web local con soporte para OpenAI, Anthropic, Qwen, MiniMax y GitHub Copilot.">
     <link rel="icon" type="image/png" href="{{ url_for('serve_assets', filename='darklogo.png') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -942,16 +943,16 @@
                 <div class="form-container">
                     <!-- Analysis Form -->
                     <div class="form-section">
-                        <h3 style="text-align: center; font-size: 1.6rem; font-weight: 600; color: var(--etrade-purple); margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
+                        <h2 style="text-align: center; font-size: 1.6rem; font-weight: 600; color: var(--etrade-purple); margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
                             <i class="fas fa-cog" style="font-size: 1.5rem; color: var(--etrade-purple-light);"></i> Configuración del análisis
-                        </h3>
+                        </h2>
                         
                         <!-- Panel 1: Data Selection -->
                         <div class="panel-group">
                             <div class="panel">
-                                <h4 class="panel-title">
+                                <h3 class="panel-title">
                                     <i class="fas fa-database"></i> Selección de datos
-                                </h4>
+                                </h3>
                                 
                                 <!-- Asset Selection -->
                                 <div class="form-group">
@@ -985,7 +986,7 @@
                                     <!-- Custom Asset Input -->
                                     <div id="customAssetDiv" class="mt-3" style="display: none;">
                                         <div class="alert alert-info">
-                                            <h6><i class="fas fa-plus-circle"></i> Símbolo de activo personalizado</h6>
+                                            <p style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-plus-circle"></i> Símbolo de activo personalizado</p>
                                             <p class="mb-2"><strong>💡 Ejemplos:</strong> NQ (futuros del Nasdaq-100), ZN (bono del Tesoro a 10 años), etc.</p>
                                             <p class="mb-0"><strong>📝 Formato:</strong> Ingresa el símbolo de Yahoo Finance para tu activo</p>
                                         </div>
@@ -1033,9 +1034,9 @@
                             
                             <!-- Panel 2: Date & Time Configuration -->
                             <div class="panel">
-                                <h4 class="panel-title">
+                                <h3 class="panel-title">
                                     <i class="fas fa-calendar-alt"></i> Configuración de fecha y hora
-                                </h4>
+                                </h3>
                                 
                                 <!-- Date Range -->
                                 <div class="form-group">
@@ -1097,9 +1098,9 @@
                         <!-- Panel 3: Settings & Security -->
                         <div class="panel-group">
                             <div class="panel">
-                                <h4 class="panel-title">
+                                <h3 class="panel-title">
                                     <i class="fas fa-cog"></i> Configuración
-                                </h4>
+                                </h3>
                                 
                                 <!-- LLM Provider Selection -->
                                 <div class="form-group">
@@ -1109,7 +1110,18 @@
                                         <option value="anthropic">Claude (Anthropic)</option>
                                         <option value="qwen">Qwen</option>
                                         <option value="minimax">MiniMax</option>
+                                        <option value="copilot">GitHub Copilot</option>
                                     </select>
+                                </div>
+
+                                <div class="form-group" id="modelSelectionGroup">
+                                    <label class="form-label" for="agentModelSelect">Modelo para agent_llm</label>
+                                    <select class="form-control" id="agentModelSelect" onchange="handleModelSelectionChange()"></select>
+                                    <small class="text-muted">Se usa para el agente de indicadores y para herramientas cuando el proveedor las soporta.</small>
+
+                                    <label class="form-label mt-3" for="graphModelSelect">Modelo para graph_llm</label>
+                                    <select class="form-control" id="graphModelSelect" onchange="handleModelSelectionChange()"></select>
+                                    <small class="text-muted">Se usa para patrones, tendencia y decisión final. Para Copilot, el valor recomendado es Claude Opus 4.6.</small>
                                 </div>
                                 
                                 <!-- OpenAI API Key Input -->
@@ -1155,7 +1167,21 @@
                                         </button>
                                     </div>
                                 </div>
-                                    
+
+                                <div class="form-group" id="copilotAuthGroup" style="display: none;">
+                                    <label class="form-label" for="copilotTokenInput">Autenticación de GitHub Copilot</label>
+                                    <div class="alert alert-info mt-2" style="display: block;">
+                                        <i class="fas fa-robot"></i>
+                                        <span>Usa la sesión local de Copilot CLI en esta máquina. También puedes guardar un token de GitHub explícito como override opcional.</span>
+                                    </div>
+                                    <div class="input-group mt-2">
+                                        <input type="password" class="form-control" id="copilotTokenInput" placeholder="Token de GitHub para Copilot (opcional)">
+                                        <button class="btn btn-outline-primary" type="button" onclick="updateApiKey('copilot')">
+                                            <i class="fas fa-save"></i> Guardar token
+                                        </button>
+                                    </div>
+                                </div>
+                                     
                                     <!-- API Key Status Messages -->
                                     <div id="apiKeyStatus" class="alert alert-info mt-2" style="display: none;">
                                         <i class="fas fa-info-circle"></i>
@@ -1173,9 +1199,9 @@
                             
                             <!-- Security Information Panel -->
                             <div class="panel security-panel">
-                                <h4 class="panel-title">
+                                <h3 class="panel-title">
                                     <i class="fas fa-shield-alt"></i> Información de seguridad
-                                </h4>
+                                </h3>
                                 
                                 <div class="security-info">
                                     <div class="security-item">
@@ -1228,7 +1254,8 @@
         const STORAGE_KEYS = {
             CUSTOM_ASSETS: 'quantagent_custom_assets',
             SELECTED_ASSET: 'quantagent_selected_asset',
-            SELECTED_TIMEFRAME: 'quantagent_selected_timeframe'
+            SELECTED_TIMEFRAME: 'quantagent_selected_timeframe',
+            SELECTED_PROVIDER: 'quantagent_provider'
         };
 
         // Add or render a custom asset button into the grid
@@ -1354,7 +1381,6 @@
 
             // Notify user
             // Use a non-blocking notification (replace alert with console + subtle DOM message if desired)
-            console.log(`Custom asset "${symbol}" selected and persisted`);
         }
 
         // Updated selectAsset to persist selection to localStorage
@@ -1379,7 +1405,6 @@
             const cav = document.getElementById('customAssetDiv');
             if (cav) cav.style.display = 'none';
 
-            console.log('Selected asset:', asset);
         }
 
         // Persist timeframe selection as well
@@ -1400,7 +1425,6 @@
                 console.warn('Could not persist selected timeframe', e);
             }
 
-            console.log('Selected timeframe:', timeframe);
         }
 
         // On page load, restore selected asset/timeframe and custom assets
@@ -1500,53 +1524,181 @@
                 }
             });
             
-            // Check API key status on page load
-            checkApiKeyStatus();
-            
             // Set initial provider dropdown state
-            const savedProvider = localStorage.getItem('quantagent_provider') || 'openai';
+            const savedProvider = localStorage.getItem(STORAGE_KEYS.SELECTED_PROVIDER) || 'openai';
             if (savedProvider) {
                 document.getElementById('llmProviderSelect').value = savedProvider;
-                handleProviderChange();
             }
+            handleProviderChange();
         });
-        
-        function checkApiKeyStatus() {
+
+        const PROVIDER_LABELS = {
+            'openai': 'OpenAI',
+            'anthropic': 'Anthropic',
+            'qwen': 'Qwen',
+            'minimax': 'MiniMax',
+            'copilot': 'GitHub Copilot'
+        };
+        let isApplyingModelConfig = false;
+
+        function getModelStorageKey(provider) {
+            return `quantagent_models_${provider}`;
+        }
+
+        function readSavedModels(provider) {
+            try {
+                const raw = localStorage.getItem(getModelStorageKey(provider));
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                console.warn('Could not read saved model selection', e);
+                return null;
+            }
+        }
+
+        function saveSelectedModels(provider, agentModel, graphModel) {
+            try {
+                localStorage.setItem(
+                    getModelStorageKey(provider),
+                    JSON.stringify({ agent_llm_model: agentModel, graph_llm_model: graphModel })
+                );
+            } catch (e) {
+                console.warn('Could not persist model selection', e);
+            }
+        }
+
+        function setModelSelectOptions(selectId, options, selectedValue) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+
+            select.innerHTML = '';
+            (options || []).forEach(optionValue => {
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.textContent = optionValue;
+                select.appendChild(option);
+            });
+
+            if (selectedValue && (options || []).includes(selectedValue)) {
+                select.value = selectedValue;
+            } else if (select.options.length > 0) {
+                select.value = select.options[0].value;
+            }
+        }
+
+        function applyProviderModelConfig(config) {
+            isApplyingModelConfig = true;
+            try {
+                setModelSelectOptions('agentModelSelect', config.agent_model_options || [], config.selected_agent_model);
+                setModelSelectOptions('graphModelSelect', config.graph_model_options || [], config.selected_graph_model);
+            } finally {
+                isApplyingModelConfig = false;
+            }
+        }
+
+        async function maybeApplySavedModels(provider, currentConfig) {
+            const savedModels = readSavedModels(provider);
+            if (!savedModels) {
+                saveSelectedModels(provider, currentConfig.selected_agent_model, currentConfig.selected_graph_model);
+                return;
+            }
+
+            const agentOptions = currentConfig.agent_model_options || [];
+            const graphOptions = currentConfig.graph_model_options || [];
+            const canRestore =
+                savedModels.agent_llm_model &&
+                savedModels.graph_llm_model &&
+                agentOptions.includes(savedModels.agent_llm_model) &&
+                graphOptions.includes(savedModels.graph_llm_model);
+
+            if (!canRestore) {
+                saveSelectedModels(provider, currentConfig.selected_agent_model, currentConfig.selected_graph_model);
+                return;
+            }
+
+            if (
+                savedModels.agent_llm_model !== currentConfig.selected_agent_model ||
+                savedModels.graph_llm_model !== currentConfig.selected_graph_model
+            ) {
+                isApplyingModelConfig = true;
+                document.getElementById('agentModelSelect').value = savedModels.agent_llm_model;
+                document.getElementById('graphModelSelect').value = savedModels.graph_llm_model;
+                isApplyingModelConfig = false;
+                await updateModelSelection(provider, false);
+            } else {
+                saveSelectedModels(provider, currentConfig.selected_agent_model, currentConfig.selected_graph_model);
+            }
+        }
+
+        function toggleProviderGroups(provider) {
+            const groups = {
+                openai: document.getElementById('openaiApiKeyGroup'),
+                anthropic: document.getElementById('anthropicApiKeyGroup'),
+                qwen: document.getElementById('qwenApiKeyGroup'),
+                minimax: document.getElementById('minimaxApiKeyGroup'),
+                copilot: document.getElementById('copilotAuthGroup')
+            };
+
+            Object.values(groups).forEach(group => {
+                if (group) {
+                    group.style.display = 'none';
+                }
+            });
+
+            if (groups[provider]) {
+                groups[provider].style.display = 'block';
+            }
+        }
+
+        async function loadProviderModelOptions(provider) {
+            const response = await fetch(`/api/provider-model-options?provider=${provider}`);
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'No se pudieron cargar los modelos disponibles.');
+            }
+            applyProviderModelConfig(data);
+            return data;
+        }
+
+        async function checkApiKeyStatus() {
             const provider = document.getElementById('llmProviderSelect')?.value || 'openai';
-            fetch(`/api/get-api-key-status?provider=${provider}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const providerNames = {
-                        'openai': 'OpenAI',
-                        'anthropic': 'Anthropic',
-                        'qwen': 'Qwen',
-                        'minimax': 'MiniMax'
-                    };
-                    const providerName = providerNames[provider] || provider;
-                    
-                    if (data.error) {
-                        console.error('API key status error:', data.error);
-                        // Don't show error if it's just that no key is set
-                        if (data.has_key === false) {
-                            showApiKeyError(`No se encontró una clave API de ${providerName}. Ingresa tu clave API de ${providerName}.`);
-                        } else {
-                            showApiKeyError(`Error al comprobar la clave API: ${data.error}`);
-                        }
+            const providerName = PROVIDER_LABELS[provider] || provider;
+
+            try {
+                const response = await fetch(`/api/get-api-key-status?provider=${provider}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.error) {
+                    console.error('API key status error:', data.error);
+                    showApiKeyError(`Error al comprobar ${providerName}: ${data.error}`);
+                    return;
+                }
+
+                if (provider === 'copilot') {
+                    if (data.has_key && data.auth_source === 'cli_login') {
+                        const modelsText = Array.isArray(data.models) && data.models.length
+                            ? ` Modelos visibles: ${data.models.join(', ')}`
+                            : '';
+                        showApiKeyStatus(`GitHub Copilot está autenticado con la sesión local del CLI.${modelsText}`);
                     } else if (data.has_key) {
-                        showApiKeyStatus(`La clave API de ${providerName} está configurada: ${data.masked_key}`);
+                        showApiKeyStatus(`GitHub Copilot está configurado con un token explícito: ${data.masked_key}`);
                     } else {
-                        showApiKeyError(`No se encontró una clave API de ${providerName}. Ingresa tu clave API de ${providerName}.`);
+                        showApiKeyError('GitHub Copilot no está autenticado. Inicia sesión con Copilot CLI o guarda un token de GitHub opcional.');
                     }
-                })
-                .catch(error => {
-                    console.error('Error checking API key status:', error);
-                    // Silently fail - don't show error to user
-                });
+                    return;
+                }
+
+                if (data.has_key) {
+                    showApiKeyStatus(`La clave API de ${providerName} está configurada: ${data.masked_key}`);
+                } else {
+                    showApiKeyError(`No se encontró una clave API de ${providerName}. Ingresa tu clave API de ${providerName}.`);
+                }
+            } catch (error) {
+                console.error('Error checking API key status:', error);
+                showApiKeyError(`No se pudo comprobar el estado de ${providerName}.`);
+            }
         }
         
                  // Global variables
@@ -1574,7 +1726,6 @@
              const cav = document.getElementById('customAssetDiv');
              if (cav) cav.style.display = 'none';
 
-             console.log('Selected asset:', asset);
          }
          
          function showCustomAssetInput() {
@@ -1646,7 +1797,6 @@
 
             // Notify user
             // Use a non-blocking notification (replace alert with console + subtle DOM message if desired)
-            console.log(`Custom asset "${symbol}" selected and persisted`);
          }
         
                  function runAnalysis() {
@@ -1719,7 +1869,6 @@
                      analyzeBtn.disabled = false;
                  } else {
                      // Handle other responses
-                     console.log('Analysis completed:', data);
                      alert('¡Análisis completado con éxito!');
                      // Reset button
                      analyzeBtn.innerHTML = originalText;
@@ -1815,84 +1964,113 @@
         
                  function updateTimeframeLimits() {
              // Placeholder for timeframe limits functionality
-             console.log('Timeframe limits updated');
          }
          
          // Provider and API Key Management Functions
-         function handleProviderChange() {
+         async function handleProviderChange() {
              const provider = document.getElementById('llmProviderSelect').value;
-             const openaiGroup = document.getElementById('openaiApiKeyGroup');
-             const anthropicGroup = document.getElementById('anthropicApiKeyGroup');
-             const qwenGroup = document.getElementById('qwenApiKeyGroup');
-             const minimaxGroup = document.getElementById('minimaxApiKeyGroup');
-
-             // Hide all groups first
-             openaiGroup.style.display = 'none';
-             anthropicGroup.style.display = 'none';
-             qwenGroup.style.display = 'none';
-             minimaxGroup.style.display = 'none';
-
-             // Show the selected provider's group
-             if (provider === 'openai') {
-                 openaiGroup.style.display = 'block';
-             } else if (provider === 'anthropic') {
-                 anthropicGroup.style.display = 'block';
-             } else if (provider === 'qwen') {
-                 qwenGroup.style.display = 'block';
-             } else if (provider === 'minimax') {
-                 minimaxGroup.style.display = 'block';
+             toggleProviderGroups(provider);
+             hideApiKeyMessages();
+             try {
+                 const config = await updateProvider(provider);
+                 if (config) {
+                     await maybeApplySavedModels(provider, config);
+                 } else {
+                     await loadProviderModelOptions(provider);
+                 }
+             } catch (error) {
+                 console.error('Error applying provider configuration:', error);
              }
-             
-             // Update provider on backend
-             updateProvider(provider);
-             
-             // Check API key status for the selected provider
-             checkApiKeyStatus();
+             await checkApiKeyStatus();
          }
          
-         function updateProvider(provider) {
-             // Save provider preference
-             localStorage.setItem('quantagent_provider', provider);
+         async function updateProvider(provider) {
+             localStorage.setItem(STORAGE_KEYS.SELECTED_PROVIDER, provider);
              
-             fetch('/api/update-provider', {
+             const response = await fetch('/api/update-provider', {
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
                  },
                  body: JSON.stringify({ provider: provider })
-             })
-             .then(response => response.json())
-             .then(data => {
-                 if (data.success) {
-                     console.log(`Provider switched to ${provider}`);
-                 } else {
-                     console.error('Failed to update provider:', data.error);
-                 }
-             })
-             .catch(error => {
-                 console.error('Error updating provider:', error);
+             });
+             const data = await response.json();
+
+             if (data.success) {
+                 applyProviderModelConfig(data);
+                 return data;
+             }
+
+             showApiKeyError(data.error || 'No se pudo actualizar el proveedor');
+             throw new Error(data.error || 'No se pudo actualizar el proveedor');
+         }
+
+         async function updateModelSelection(provider, showSuccess = true) {
+             const actualProvider = provider || document.getElementById('llmProviderSelect').value;
+             const agentModel = document.getElementById('agentModelSelect').value;
+             const graphModel = document.getElementById('graphModelSelect').value;
+
+             const response = await fetch('/api/update-llm-models', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                 },
+                 body: JSON.stringify({
+                     provider: actualProvider,
+                     agent_llm_model: agentModel,
+                     graph_llm_model: graphModel
+                 })
+             });
+             const data = await response.json();
+
+             if (!response.ok || data.error) {
+                 showApiKeyError(data.error || 'No se pudieron actualizar los modelos');
+                 throw new Error(data.error || 'No se pudieron actualizar los modelos');
+             }
+
+             applyProviderModelConfig(data);
+             saveSelectedModels(actualProvider, data.selected_agent_model, data.selected_graph_model);
+             if (showSuccess) {
+                 showApiKeySuccess('Los modelos del proveedor se actualizaron correctamente.');
+             }
+             return data;
+         }
+
+         function handleModelSelectionChange() {
+             if (isApplyingModelConfig) {
+                 return;
+             }
+
+             updateModelSelection().catch(error => {
+                 console.error('Error updating model selection:', error);
              });
          }
          
          function updateApiKey(provider) {
-             const providerSelect = document.getElementById('llmProviderSelect');
-             const actualProvider = provider || providerSelect.value;
-             
-             let apiKey;
-             if (actualProvider === 'openai') {
-                 apiKey = document.getElementById('openaiApiKeyInput').value.trim();
-             } else if (actualProvider === 'anthropic') {
-                 apiKey = document.getElementById('anthropicApiKeyInput').value.trim();
-             } else if (actualProvider === 'qwen') {
-                 apiKey = document.getElementById('qwenApiKeyInput').value.trim();
-             } else if (actualProvider === 'minimax') {
-                 apiKey = document.getElementById('minimaxApiKeyInput').value.trim();
-             }
-             
-             if (!apiKey) {
-                  showApiKeyError('Por favor, ingresa una clave API');
-                 return;
-             }
+              const providerSelect = document.getElementById('llmProviderSelect');
+              const actualProvider = provider || providerSelect.value;
+              
+              let apiKey;
+              if (actualProvider === 'openai') {
+                  apiKey = document.getElementById('openaiApiKeyInput').value.trim();
+              } else if (actualProvider === 'anthropic') {
+                  apiKey = document.getElementById('anthropicApiKeyInput').value.trim();
+              } else if (actualProvider === 'qwen') {
+                  apiKey = document.getElementById('qwenApiKeyInput').value.trim();
+              } else if (actualProvider === 'minimax') {
+                  apiKey = document.getElementById('minimaxApiKeyInput').value.trim();
+              } else if (actualProvider === 'copilot') {
+                  apiKey = document.getElementById('copilotTokenInput').value.trim();
+              }
+              
+              if (!apiKey) {
+                  showApiKeyError(
+                      actualProvider === 'copilot'
+                          ? 'Ingresa un token de GitHub para usarlo como override opcional.'
+                          : 'Por favor, ingresa una clave API'
+                  );
+                  return;
+              }
              
              // Hide previous messages
              hideApiKeyMessages();
@@ -1915,26 +2093,29 @@
                  })
              })
              .then(response => response.json())
-             .then(data => {
-                 if (data.success) {
-                     const providerNames = {
-                         'openai': 'OpenAI',
-                         'anthropic': 'Anthropic',
-                         'qwen': 'Qwen',
-                         'minimax': 'MiniMax'
-                     };
-                      showApiKeySuccess(`¡La clave API de ${providerNames[actualProvider] || actualProvider} se actualizó correctamente!`);
-                     if (actualProvider === 'openai') {
-                         document.getElementById('openaiApiKeyInput').value = '';
-                     } else if (actualProvider === 'anthropic') {
-                         document.getElementById('anthropicApiKeyInput').value = '';
-                     } else if (actualProvider === 'qwen') {
-                         document.getElementById('qwenApiKeyInput').value = '';
-                     } else if (actualProvider === 'minimax') {
-                         document.getElementById('minimaxApiKeyInput').value = '';
-                     }
-                     checkApiKeyStatus();
-                 } else {
+              .then(data => {
+                  if (data.success) {
+                      const providerNames = {
+                          'openai': 'OpenAI',
+                          'anthropic': 'Anthropic',
+                          'qwen': 'Qwen',
+                          'minimax': 'MiniMax',
+                          'copilot': 'GitHub Copilot'
+                      };
+                       showApiKeySuccess(`¡La clave API de ${providerNames[actualProvider] || actualProvider} se actualizó correctamente!`);
+                      if (actualProvider === 'openai') {
+                          document.getElementById('openaiApiKeyInput').value = '';
+                      } else if (actualProvider === 'anthropic') {
+                          document.getElementById('anthropicApiKeyInput').value = '';
+                      } else if (actualProvider === 'qwen') {
+                          document.getElementById('qwenApiKeyInput').value = '';
+                      } else if (actualProvider === 'minimax') {
+                          document.getElementById('minimaxApiKeyInput').value = '';
+                      } else if (actualProvider === 'copilot') {
+                          document.getElementById('copilotTokenInput').value = '';
+                      }
+                      checkApiKeyStatus();
+                  } else {
                       showApiKeyError(data.error || 'No se pudo actualizar la clave API');
                  }
              })

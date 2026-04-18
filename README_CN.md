@@ -92,7 +92,7 @@
   - 交互式资产选择（股票、加密货币、商品、指数）
   - 多时间框架分析（1分钟到1天）
   - 动态图表生成
-  - API 密钥管理
+  - OpenAI、Anthropic、Qwen、MiniMax 与 GitHub Copilot 的 Provider、模型与凭证管理
 
 ## 📦 安装
 
@@ -117,7 +117,7 @@ conda install -c conda-forge ta-lib
 
 或访问 [TA-Lib Python 仓库](https://github.com/ta-lib/ta-lib-python) 获取详细的安装说明。
 
-### 3. 设置 LLM API 密钥
+### 3. 设置 LLM 鉴权
 您可以在我们的网络界面中稍后设置它，
 
 ![alt text](assets/apibox.png)
@@ -136,21 +136,38 @@ export DASHSCOPE_API_KEY="your_dashscope_api_key_here"
 # For MiniMax (204K context, OpenAI-compatible API)
 export MINIMAX_API_KEY="your_minimax_api_key_here"
 
+# For GitHub Copilot (optional explicit token override)
+export COPILOT_GITHUB_TOKEN="your_github_token_here"
+
 ```
+
+对于 **GitHub Copilot**，推荐的本地单用户部署方式是在服务器机器上预先完成 Copilot CLI 登录，然后让 QuantAgent 复用这份本地登录状态。如果需要，也可以通过 `COPILOT_GITHUB_TOKEN` 或网页中的显式 token 覆盖。
 
 ## 🔧 实现细节
 
-**重要说明**：我们的模型需要一个可以接受图像输入的 LLM，因为我们的智能体会生成和分析视觉图表以进行模式识别和趋势分析。
+**重要说明**：模式和趋势分析需要支持图像输入的 LLM，因为这些智能体会生成并分析视觉图表。
+
+**GitHub Copilot 说明**：当前 Copilot SDK 集成支持聊天、模型切换、CLI/token 鉴权与图表多模态分析。由于现有 LangGraph 流程依赖 LangChain 风格的 tool calling，QuantAgent 会在 provider 不暴露相同 `bind_tools()` / `tool_calls()` 语义时，退回到 Python 侧完成指标和图表工具执行。
 
 ### Python 使用
 
 要在代码中使用 QuantAgents，您可以导入 trading_graph 模块并初始化 TradingGraph() 对象。.invoke() 函数将返回全面的分析。您可以运行 web_interface.py，这里也有一个快速示例：
 
 ```python
+from default_config import DEFAULT_CONFIG
 from trading_graph import TradingGraph
 
-# 初始化交易图
-trading_graph = TradingGraph()
+config = DEFAULT_CONFIG.copy()
+config.update({
+    "agent_llm_provider": "copilot",
+    "graph_llm_provider": "copilot",
+    "agent_llm_model": "gpt-5.4",
+    "graph_llm_model": "claude-opus-4.6",
+    # 如果你希望使用 token 而不是本地 CLI 登录：
+    # "copilot_github_token": "ghp_..."
+})
+
+trading_graph = TradingGraph(config=config)
 
 # 使用您的数据创建初始状态
 initial_state = {
@@ -171,38 +188,10 @@ print(final_state.get("pattern_report"))
 print(final_state.get("trend_report"))
 ```
 
-您还可以调整默认配置以在 web_interface.py 中设置您自己的 LLM 选择或分析参数。
+网页界面也暴露了同样的 provider / model 配置能力，并允许分别设置 `agent_llm` 与 `graph_llm`。对于 Copilot，默认组合为：
 
-```python
-if provider == "anthropic":
-    # Set default Claude models if not already set to Anthropic models
-    if not analyzer.config["agent_llm_model"].startswith("claude"):
-        analyzer.config["agent_llm_model"] = "claude-haiku-4-5-20251001"
-    if not analyzer.config["graph_llm_model"].startswith("claude"):
-        analyzer.config["graph_llm_model"] = "claude-haiku-4-5-20251001"
-
-elif provider == "qwen":
-    # Set default Qwen models if not already set to Qwen models
-    if not analyzer.config["agent_llm_model"].startswith("qwen"):
-        analyzer.config["agent_llm_model"] = "qwen3-max"
-    if not analyzer.config["graph_llm_model"].startswith("qwen"):
-        analyzer.config["graph_llm_model"] = "qwen3-vl-plus"
-
-elif provider == "minimax":
-    # Set default MiniMax models (204K context window)
-    if not analyzer.config["agent_llm_model"].startswith("MiniMax"):
-        analyzer.config["agent_llm_model"] = "MiniMax-M2.7"
-    if not analyzer.config["graph_llm_model"].startswith("MiniMax"):
-        analyzer.config["graph_llm_model"] = "MiniMax-M2.7"
-
-else:
-    # Set default OpenAI models if not already set to OpenAI models
-    if analyzer.config["agent_llm_model"].startswith(("claude", "qwen", "MiniMax")):
-        analyzer.config["agent_llm_model"] = "gpt-4o-mini"
-    if analyzer.config["graph_llm_model"].startswith(("claude", "qwen", "MiniMax")):
-        analyzer.config["graph_llm_model"] = "gpt-4o"
-        
-```
+- `agent_llm_model = "gpt-5.4"`
+- `graph_llm_model = "claude-opus-4.6"`
 
 对于实时数据，我们建议使用网络界面，因为它通过 yfinance 提供对实时市场数据的访问。系统会自动获取最近 30 个蜡烛图以获得最佳的 LLM 分析准确性。
 
@@ -210,10 +199,15 @@ else:
 
 系统支持以下配置参数：
 
+- `agent_llm_provider`：指标/工具型智能体所使用的 provider（默认：`"openai"`）
+- `graph_llm_provider`：模式、趋势与决策分析所使用的 provider（默认：`"openai"`）
 - `agent_llm_model`：单个智能体的模型（默认："gpt-4o-mini"）
 - `graph_llm_model`：图逻辑和决策制定的模型（默认："gpt-4o"）
 - `agent_llm_temperature`：智能体响应的温度（默认：0.1）
 - `graph_llm_temperature`：图逻辑的温度（默认：0.1）
+- `copilot_github_token`：Copilot provider 的可选 GitHub token 覆盖
+
+Copilot 的初始默认模型为：`agent_llm = gpt-5.4`，`graph_llm = claude-opus-4.6`。
 
 **注意**：系统使用默认的令牌限制进行综合分析。不应用人工令牌限制。
 
@@ -236,7 +230,8 @@ python web_interface.py
 2. **时间框架选择**：分析从 1 分钟到每日间隔的数据
 3. **日期范围**：为分析选择自定义日期范围
 4. **实时分析**：获得带有可视化的全面技术分析
-5. **API 密钥管理**：通过界面更新您的 LLM API 密钥
+5. **Provider 与模型管理**：在界面中切换 provider，并分别设置 `agent_llm` / `graph_llm`
+6. **凭证管理**：为 API 型 provider 更新 API key，或直接复用本机 GitHub Copilot CLI 登录
 
 ## 📺 演示
 
@@ -274,6 +269,7 @@ python web_interface.py
 - [**Anthropic (Claude)**](https://github.com/anthropics/anthropic-sdk-python)
 - [**Qwen**](https://github.com/QwenLM/Qwen)
 - [**MiniMax**](https://platform.minimaxi.com/) — 204K context, OpenAI-compatible API
+- [**GitHub Copilot SDK**](https://github.com/github/copilot-sdk-python)
 - [**yfinance**](https://github.com/ranaroussi/yfinance)
 - [**Flask**](https://github.com/pallets/flask)
 - [**TechnicalAnalysisAutomation**](https://github.com/neurotrader888/TechnicalAnalysisAutomation/tree/main)
@@ -289,7 +285,7 @@ python web_interface.py
 
 1. **TA-Lib 安装**：如果您遇到 TA-Lib 安装问题，请参考[官方仓库](https://github.com/ta-lib/ta-lib-python)获取平台特定的说明。
 
-2. **LLM API 密钥**：确保您的 API 密钥在环境中或通过网络界面正确设置。
+2. **LLM 鉴权**：确保 API key 已通过环境变量或网页正确设置，或者确认 GitHub Copilot CLI 已经在宿主机上完成登录。
 
 3. **数据获取**：系统使用雅虎财经获取数据。某些符号可能不可用或历史数据有限。
 
@@ -299,11 +295,11 @@ python web_interface.py
 
 如果您遇到任何问题，请：
 
-0. 尝试刷新页面，重新通过页面输入LLM API 密钥
+0. 尝试刷新页面，并重新检查 provider 凭证或 Copilot CLI 登录状态
 1. 检查上面的故障排除部分
 2. 查看控制台中的错误消息
 3. 确保所有依赖项都正确安装
-4. 验证您的 LLM API 密钥有效且有足够的积分
+4. 验证您的 API key 有效且额度充足，或确认 Copilot session/token 仍然有效
 
 ## 📧 联系
 

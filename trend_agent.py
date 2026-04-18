@@ -10,6 +10,11 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from openai import RateLimitError
 
 
+def _supports_langchain_tool_calls(llm) -> bool:
+    """Return whether the model can surface LangChain-style tool calls."""
+    return getattr(llm, "supports_langchain_tool_calls", True)
+
+
 def build_trend_tool_system_prompt() -> str:
     """Build the Spanish tool prompt for trend analysis."""
     return (
@@ -63,6 +68,7 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
         # --- Tool definitions ---
         tools = [toolkit.generate_trend_image]
         time_frame = state["time_frame"]
+        supports_tool_calls = _supports_langchain_tool_calls(tool_llm)
 
         # --- Check for precomputed image in state ---
         trend_image_b64 = state.get("trend_image")
@@ -85,29 +91,34 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
             ]
 
             # --- Prepare tool chain ---
-            chain = tool_llm.bind_tools(tools)
+            chain = tool_llm.bind_tools(tools) if supports_tool_calls else None
 
-            # --- Step 1: Let LLM decide if it wants to call generate_trend_image ---
-            ai_response = invoke_with_retry(chain.invoke, messages)
-            messages.append(ai_response)
+            if not supports_tool_calls:
+                trend_image_b64 = toolkit.generate_trend_image.invoke(
+                    {"kline_data": json.loads(json.dumps(state["kline_data"]))}
+                ).get("trend_image")
+            else:
+                # --- Step 1: Let LLM decide if it wants to call generate_trend_image ---
+                ai_response = invoke_with_retry(chain.invoke, messages)
+                messages.append(ai_response)
 
-            # --- Step 2: Handle tool call (generate_trend_image) ---
-            if hasattr(ai_response, "tool_calls"):
-                for call in ai_response.tool_calls:
-                    tool_name = call["name"]
-                    tool_args = call["args"]
-                    # Always provide kline_data
-                    import copy
+                # --- Step 2: Handle tool call (generate_trend_image) ---
+                if hasattr(ai_response, "tool_calls"):
+                    for call in ai_response.tool_calls:
+                        tool_name = call["name"]
+                        tool_args = call["args"]
+                        # Always provide kline_data
+                        import copy
 
-                    tool_args["kline_data"] = copy.deepcopy(state["kline_data"])
-                    tool_fn = next(t for t in tools if t.name == tool_name)
-                    tool_result = tool_fn.invoke(tool_args)
-                    trend_image_b64 = tool_result.get("trend_image")
-                    messages.append(
-                        ToolMessage(
-                            tool_call_id=call["id"], content=json.dumps(tool_result)
+                        tool_args["kline_data"] = copy.deepcopy(state["kline_data"])
+                        tool_fn = next(t for t in tools if t.name == tool_name)
+                        tool_result = tool_fn.invoke(tool_args)
+                        trend_image_b64 = tool_result.get("trend_image")
+                        messages.append(
+                            ToolMessage(
+                                tool_call_id=call["id"], content=json.dumps(tool_result)
+                            )
                         )
-                    )
         else:
             print("Using precomputed trend image from state")
 
@@ -162,7 +173,8 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
                     raise
         else:
             # If no image was generated, fall back to reasoning with messages
-            final_response = invoke_with_retry(chain.invoke, messages)
+            fallback_invoke = graph_llm.invoke if not supports_tool_calls else chain.invoke
+            final_response = invoke_with_retry(fallback_invoke, messages)
 
         return {
             "messages": messages + [final_response],

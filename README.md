@@ -95,7 +95,7 @@ Modern Flask-based web application with:
   - Interactive asset selection (stocks, crypto, commodities, indices)
   - Multiple timeframe analysis (1m to 1d)
   - Dynamic chart generation
-  - API key management
+  - Provider, model, and credential management for OpenAI, Anthropic, Qwen, MiniMax, and GitHub Copilot
 
 ## 📦 Installation
 
@@ -121,8 +121,8 @@ conda install -c conda-forge ta-lib
 
 Or visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
 
-### 3. Set Up LLM API Key
-You can set it in our Web InterFace Later,
+### 3. Set Up LLM Authentication
+You can set it in our Web Interface later,
 
 ![alt text](assets/apibox.png)
 
@@ -140,7 +140,12 @@ export DASHSCOPE_API_KEY="your_dashscope_api_key_here"
 # For MiniMax (204K context, OpenAI-compatible API)
 export MINIMAX_API_KEY="your_minimax_api_key_here"
 
+# For GitHub Copilot (optional explicit token override)
+export COPILOT_GITHUB_TOKEN="your_github_token_here"
+
 ```
+
+For **GitHub Copilot**, the recommended local single-user setup is to keep the Copilot CLI already authenticated on the server machine and let QuantAgent reuse that local session. If you prefer, you can also provide `COPILOT_GITHUB_TOKEN` or save an explicit token from the web UI.
 
 
 
@@ -162,7 +167,8 @@ The web application will be available at `http://127.0.0.1:5000`
 2. **Timeframe Selection**: Analyze data from 1-minute to daily intervals
 3. **Date Range**: Select custom date ranges for analysis
 4. **Real-time Analysis**: Get comprehensive technical analysis with visualizations
-5. **API Key Management**: Update your OpenAI API key through the interface
+5. **Provider and Model Management**: Switch providers and set separate `agent_llm` / `graph_llm` models from the interface
+6. **Credential Management**: Update API keys for API-based providers or reuse the local GitHub Copilot CLI login
 
 ## 📺 Demo
 
@@ -172,17 +178,29 @@ The web application will be available at `http://127.0.0.1:5000`
 ## 🔧 Implementation Details
 
 
-**Important Note**: Our model requires an LLM that can take images as input, as our agents generate and analyze visual charts for pattern recognition and trend analysis.
+**Important Note**: Pattern and trend analysis require an LLM that can take images as input, because the agents generate and analyze visual charts for pattern recognition and trend analysis.
+
+**GitHub Copilot Note**: The Copilot SDK integration supports chat, model selection, CLI/token auth, and multimodal chart analysis. The current LangGraph flow still depends on LangChain-style tool calling, so QuantAgent uses a Python-side fallback for indicator/chart generation when the provider does not expose `bind_tools()` / `tool_calls()` in the same way.
 
 ### Python Usage
 
 To use QuantAgents inside your code, you can import the trading_graph module and initialize a TradingGraph() object. The .invoke() function will return a comprehensive analysis. You can run web_interface.py, here's also a quick example:
 
 ```python
+from default_config import DEFAULT_CONFIG
 from trading_graph import TradingGraph
 
-# Initialize the trading graph
-trading_graph = TradingGraph()
+config = DEFAULT_CONFIG.copy()
+config.update({
+    "agent_llm_provider": "copilot",
+    "graph_llm_provider": "copilot",
+    "agent_llm_model": "gpt-5.4",
+    "graph_llm_model": "claude-opus-4.6",
+    # Optional when you want a token instead of local CLI auth:
+    # "copilot_github_token": "ghp_..."
+})
+
+trading_graph = TradingGraph(config=config)
 
 # Create initial state with your data
 initial_state = {
@@ -203,38 +221,10 @@ print(final_state.get("pattern_report"))
 print(final_state.get("trend_report"))
 ```
 
-You can also adjust the default configuration to set your own choice of LLMs or analysis parameters in web_interface.py.
+The web interface exposes the same provider/model configuration and keeps `agent_llm` and `graph_llm` independently configurable. For Copilot, the default pairing is:
 
-```python
-if provider == "anthropic":
-    # Set default Claude models if not already set to Anthropic models
-    if not analyzer.config["agent_llm_model"].startswith("claude"):
-        analyzer.config["agent_llm_model"] = "claude-haiku-4-5-20251001"
-    if not analyzer.config["graph_llm_model"].startswith("claude"):
-        analyzer.config["graph_llm_model"] = "claude-haiku-4-5-20251001"
-
-elif provider == "qwen":
-    # Set default Qwen models if not already set to Qwen models
-    if not analyzer.config["agent_llm_model"].startswith("qwen"):
-        analyzer.config["agent_llm_model"] = "qwen3-max"
-    if not analyzer.config["graph_llm_model"].startswith("qwen"):
-        analyzer.config["graph_llm_model"] = "qwen3-vl-plus"
-
-elif provider == "minimax":
-    # Set default MiniMax models (204K context window)
-    if not analyzer.config["agent_llm_model"].startswith("MiniMax"):
-        analyzer.config["agent_llm_model"] = "MiniMax-M2.7"
-    if not analyzer.config["graph_llm_model"].startswith("MiniMax"):
-        analyzer.config["graph_llm_model"] = "MiniMax-M2.7"
-
-else:
-    # Set default OpenAI models if not already set to OpenAI models
-    if analyzer.config["agent_llm_model"].startswith(("claude", "qwen", "MiniMax")):
-        analyzer.config["agent_llm_model"] = "gpt-4o-mini"
-    if analyzer.config["graph_llm_model"].startswith(("claude", "qwen", "MiniMax")):
-        analyzer.config["graph_llm_model"] = "gpt-4o"
-
-```
+- `agent_llm_model = "gpt-5.4"`
+- `graph_llm_model = "claude-opus-4.6"`
 
 For live data, we recommend using the web interface as it provides access to real-time market data through yfinance. The system automatically fetches the most recent 30 candlesticks for optimal LLM analysis accuracy.
 
@@ -242,10 +232,15 @@ For live data, we recommend using the web interface as it provides access to rea
 
 The system supports the following configuration parameters:
 
+- `agent_llm_provider`: Provider for the indicator/tool-oriented agent (default: `"openai"`)
+- `graph_llm_provider`: Provider for pattern, trend, and decision analysis (default: `"openai"`)
 - `agent_llm_model`: Model for individual agents (default: "gpt-4o-mini")
 - `graph_llm_model`: Model for graph logic and decision making (default: "gpt-4o")
 - `agent_llm_temperature`: Temperature for agent responses (default: 0.1)
 - `graph_llm_temperature`: Temperature for graph logic (default: 0.1)
+- `copilot_github_token`: Optional GitHub token override for the Copilot provider
+
+The initial Copilot defaults are `gpt-5.4` for `agent_llm` and `claude-opus-4.6` for `graph_llm`.
 
 **Note**: The system uses default token limits for comprehensive analysis. No artificial token restrictions are applied.
 
@@ -283,6 +278,7 @@ This repository was built with the help of the following libraries and framework
 - [**Anthropic (Claude)**](https://github.com/anthropics/anthropic-sdk-python)
 - [**Qwen**](https://github.com/QwenLM/Qwen)
 - [**MiniMax**](https://platform.minimaxi.com/) — 204K context, OpenAI-compatible API
+- [**GitHub Copilot SDK**](https://github.com/github/copilot-sdk-python)
 - [**yfinance**](https://github.com/ranaroussi/yfinance)
 - [**Flask**](https://github.com/pallets/flask)
 - [**TechnicalAnalysisAutomation**](https://github.com/neurotrader888/TechnicalAnalysisAutomation/tree/main)
@@ -297,7 +293,7 @@ This software is for educational and research purposes only. It is not intended 
 
 1. **TA-Lib Installation**: If you encounter TA-Lib installation issues, refer to the [official repository](https://github.com/ta-lib/ta-lib-python) for platform-specific instructions.
 
-2. **LLM API Key**: Ensure your API key is properly set in the environment or through the web interface.
+2. **LLM Authentication**: Ensure your API key is properly set in the environment or through the web interface, or confirm that GitHub Copilot CLI is already authenticated on the host machine.
 
 3. **Data Fetching**: The system uses Yahoo Finance for data. Some symbols might not be available or have limited historical data.
 
@@ -307,11 +303,11 @@ This software is for educational and research purposes only. It is not intended 
 
 If you encounter any issues, please:
 
-0. Try refresh and re-enter LLM API key
+0. Try refreshing the page and re-checking your provider credentials or Copilot CLI login
 1. Check the troubleshooting section above
 2. Review the error messages in the console
 3. Ensure all dependencies are properly installed
-4. Verify your API key is valid and has sufficient credits
+4. Verify your API key is valid and has sufficient credits, or that your Copilot session/token is active
 
 ## 📧 Contact
 

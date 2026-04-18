@@ -572,7 +572,6 @@
         }
         
         function runAnalysis() {
-            console.log("runAnalysis called");
             // Reset UI to initial state
             document.getElementById('loadingSection').style.display = 'block';
             document.getElementById('resultsSection').style.display = 'none';
@@ -595,11 +594,9 @@
             }
 
             if (!asset || !timeframe) {
-                console.log("Missing asset or timeframe");
                 alert('Please select both asset and timeframe.');
                 return;
             }
-            console.log("Passed asset/timeframe check");
 
             if (dataSource === 'live') {
                 const startDate = document.getElementById('startDate').value;
@@ -658,7 +655,6 @@
                     document.getElementById('resultsSection').style.display = 'none';
                     return;
                 }
-                console.log("Passed date/time checks");
 
                 if (!startDate || !endDate) {
                     alert('Please select both start and end dates.');
@@ -711,7 +707,6 @@
                 }
                 
                 // Send analysis request
-                console.log('Sending analysis request:', requestData);
                 return fetch('/api/analyze', {
                     method: 'POST',
                     headers: {
@@ -722,12 +717,10 @@
             })
             .then(response => {
                 if (!response) return; // API key validation failed
-                console.log('Response status:', response.status);
                 return response.json();
             })
             .then(data => {
                 if (!data) return; // API key validation failed
-                console.log('Analysis response:', data);
                 document.getElementById('loadingSection').style.display = 'none';
                 
                 if (data.error) {
@@ -745,7 +738,6 @@
         }
         
         function displayResults(data) {
-            console.log('Displaying results:', data);
             
             // Update summary stats
             document.getElementById('dataPoints').textContent = data.data_length || '-';

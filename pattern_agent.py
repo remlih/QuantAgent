@@ -7,6 +7,11 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from openai import RateLimitError
 
 
+def _supports_langchain_tool_calls(llm) -> bool:
+    """Return whether the model can surface LangChain-style tool calls."""
+    return getattr(llm, "supports_langchain_tool_calls", True)
+
+
 def build_pattern_reference_text() -> str:
     """Return the Spanish reference list of classic candlestick patterns."""
     return """
@@ -79,6 +84,7 @@ def create_pattern_agent(tool_llm, graph_llm, toolkit):
         tools = [toolkit.generate_kline_image]
         time_frame = state["time_frame"]
         pattern_text = build_pattern_reference_text()
+        supports_tool_calls = _supports_langchain_tool_calls(tool_llm)
 
         # --- Check for precomputed image in state ---
         pattern_image_b64 = state.get("pattern_image")
@@ -119,27 +125,34 @@ def create_pattern_agent(tool_llm, graph_llm, toolkit):
                 ]
             ).partial(kline_data=json.dumps(state["kline_data"], indent=2))
 
-            chain = prompt | tool_llm.bind_tools(tools)
+            chain = prompt | tool_llm.bind_tools(tools) if supports_tool_calls else None
 
-            # --- Step 1: First LLM call to determine tool usage ---
-            ai_response = invoke_with_retry(chain.invoke, messages)
-            messages.append(ai_response)
+            if not supports_tool_calls:
+                tool_result = invoke_tool_with_retry(
+                    toolkit.generate_kline_image,
+                    {"kline_data": copy.deepcopy(state["kline_data"])},
+                )
+                pattern_image_b64 = tool_result.get("pattern_image")
+            else:
+                # --- Step 1: First LLM call to determine tool usage ---
+                ai_response = invoke_with_retry(chain.invoke, messages)
+                messages.append(ai_response)
 
-            # --- Step 2: Handle tool call (generate_kline_image) ---
-            if hasattr(ai_response, "tool_calls"):
-                for call in ai_response.tool_calls:
-                    tool_name = call["name"]
-                    tool_args = call["args"]
-                    # Always provide kline_data
-                    tool_args["kline_data"] = copy.deepcopy(state["kline_data"])
-                    tool_fn = next(t for t in tools if t.name == tool_name)
-                    tool_result = invoke_tool_with_retry(tool_fn, tool_args)
-                    pattern_image_b64 = tool_result.get("pattern_image")
-                    messages.append(
-                        ToolMessage(
-                            tool_call_id=call["id"], content=json.dumps(tool_result)
+                # --- Step 2: Handle tool call (generate_kline_image) ---
+                if hasattr(ai_response, "tool_calls"):
+                    for call in ai_response.tool_calls:
+                        tool_name = call["name"]
+                        tool_args = call["args"]
+                        # Always provide kline_data
+                        tool_args["kline_data"] = copy.deepcopy(state["kline_data"])
+                        tool_fn = next(t for t in tools if t.name == tool_name)
+                        tool_result = invoke_tool_with_retry(tool_fn, tool_args)
+                        pattern_image_b64 = tool_result.get("pattern_image")
+                        messages.append(
+                            ToolMessage(
+                                tool_call_id=call["id"], content=json.dumps(tool_result)
+                            )
                         )
-                    )
         else:
             print("Using precomputed pattern image from state")
 

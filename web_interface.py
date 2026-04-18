@@ -14,6 +14,7 @@ from openai import OpenAI
 from copilot_provider import (
     DEFAULT_COPILOT_AGENT_MODEL,
     DEFAULT_COPILOT_GRAPH_MODEL,
+    list_available_copilot_models,
     validate_copilot_auth,
 )
 import static_util
@@ -41,6 +42,99 @@ GENERIC_PROVIDER_UPDATE_ERROR = (
 GENERIC_API_KEY_UPDATE_ERROR = (
     "No se pudo actualizar la clave API en este momento. Inténtalo de nuevo."
 )
+SECURITY_HEADERS = {
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "img-src 'self' data:; "
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+        "script-src 'self' 'unsafe-inline'; "
+        "font-src 'self' data: https://cdnjs.cloudflare.com; "
+        "connect-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none'"
+    ),
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+}
+
+PROVIDER_DEFAULT_MODELS = {
+    "openai": ("gpt-4o-mini", "gpt-4o"),
+    "anthropic": ("claude-haiku-4-5-20251001", "claude-haiku-4-5-20251001"),
+    "qwen": ("qwen3-max", "qwen3-vl-plus"),
+    "minimax": ("MiniMax-M2.7", "MiniMax-M2.7"),
+    "copilot": (DEFAULT_COPILOT_AGENT_MODEL, DEFAULT_COPILOT_GRAPH_MODEL),
+}
+
+PROVIDER_MODEL_OPTIONS = {
+    "openai": {
+        "agent": ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
+        "graph": ["gpt-4o", "gpt-4.1", "gpt-4o-mini"],
+    },
+    "anthropic": {
+        "agent": ["claude-haiku-4-5-20251001", "claude-sonnet-4.5", "claude-opus-4.6"],
+        "graph": ["claude-haiku-4-5-20251001", "claude-sonnet-4.5", "claude-opus-4.6"],
+    },
+    "qwen": {
+        "agent": ["qwen3-max", "qwen-flash"],
+        "graph": ["qwen3-vl-plus", "qwen3-max"],
+    },
+    "minimax": {
+        "agent": ["MiniMax-M2.7", "MiniMax-M2.7-highspeed"],
+        "graph": ["MiniMax-M2.7", "MiniMax-M2.7-highspeed"],
+    },
+}
+
+
+def _unique_preserving_order(values: list[str]) -> list[str]:
+    """Return unique values while preserving the original order."""
+    seen = set()
+    result = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            result.append(value)
+    return result
+
+
+def get_provider_model_config(config: Dict[str, Any], provider: str) -> Dict[str, Any]:
+    """Return default, selected, and available models for a provider."""
+    agent_default, graph_default = PROVIDER_DEFAULT_MODELS[provider]
+    selected_agent = config.get("agent_llm_model", agent_default)
+    selected_graph = config.get("graph_llm_model", graph_default)
+
+    if provider == "copilot":
+        github_token = resolve_api_key(config, provider) or None
+        try:
+            available_models = list_available_copilot_models(github_token=github_token)
+        except Exception:
+            available_models = []
+        agent_options = _unique_preserving_order(
+            [selected_agent, agent_default, DEFAULT_COPILOT_AGENT_MODEL] + available_models
+        )
+        graph_options = _unique_preserving_order(
+            [selected_graph, graph_default, DEFAULT_COPILOT_GRAPH_MODEL] + available_models
+        )
+    else:
+        static_options = PROVIDER_MODEL_OPTIONS[provider]
+        agent_options = _unique_preserving_order(
+            [selected_agent, agent_default] + static_options["agent"]
+        )
+        graph_options = _unique_preserving_order(
+            [selected_graph, graph_default] + static_options["graph"]
+        )
+
+    return {
+        "provider": provider,
+        "selected_agent_model": selected_agent,
+        "selected_graph_model": selected_graph,
+        "default_agent_model": agent_default,
+        "default_graph_model": graph_default,
+        "agent_model_options": agent_options,
+        "graph_model_options": graph_options,
+    }
 
 
 class WebTradingAnalyzer:
@@ -735,6 +829,26 @@ class WebTradingAnalyzer:
 analyzer = WebTradingAnalyzer()
 
 
+@app.after_request
+def apply_security_headers(response):
+    """Apply basic hardening headers for the localhost web UI."""
+    for header, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(header, value)
+
+    if request.is_secure:
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+        )
+
+    return response
+
+
+@app.route("/health")
+def health():
+    """Basic health endpoint for launch checks and uptime monitoring."""
+    return jsonify({"status": "ok"})
+
+
 @app.route("/")
 def index():
     """Main landing page - redirect to demo."""
@@ -1037,11 +1151,69 @@ def update_provider():
         print(f"Provider updated to {provider} successfully")
         print(f"graph_llm_model updated to {analyzer.config['graph_llm_model']} successfully")
         print(f"agent_llm updated to {analyzer.config['agent_llm_model']} successfully")
-        return jsonify({"success": True, "message": f"Proveedor actualizado a {provider}"})
+        response = {
+            "success": True,
+            "message": f"Proveedor actualizado a {provider}",
+        }
+        response.update(get_provider_model_config(analyzer.config, provider))
+        return jsonify(response)
 
     except Exception as e:
         print(f"Error in update_provider: {str(e)}")
         return jsonify({"error": GENERIC_PROVIDER_UPDATE_ERROR})
+
+
+@app.route("/api/provider-model-options")
+def provider_model_options():
+    """API endpoint to return the available and selected models for a provider."""
+    try:
+        provider = request.args.get(
+            "provider", analyzer.config.get("agent_llm_provider", "openai")
+        )
+        if provider not in PROVIDER_DEFAULT_MODELS:
+            return jsonify({"error": "Proveedor inválido"})
+
+        return jsonify(get_provider_model_config(analyzer.config, provider))
+    except Exception as e:
+        print(f"Error in provider_model_options: {str(e)}")
+        return jsonify({"error": "No se pudieron cargar los modelos disponibles."})
+
+
+@app.route("/api/update-llm-models", methods=["POST"])
+def update_llm_models():
+    """API endpoint to update the selected agent and graph models."""
+    try:
+        data = request.get_json() or {}
+        provider = data.get(
+            "provider", analyzer.config.get("agent_llm_provider", "openai")
+        )
+        agent_llm_model = data.get("agent_llm_model")
+        graph_llm_model = data.get("graph_llm_model")
+
+        if provider not in PROVIDER_DEFAULT_MODELS:
+            return jsonify({"error": "Proveedor inválido"})
+        if not agent_llm_model or not graph_llm_model:
+            return jsonify(
+                {"error": "Los modelos agent_llm_model y graph_llm_model son obligatorios"}
+            )
+
+        analyzer.config["agent_llm_provider"] = provider
+        analyzer.config["graph_llm_provider"] = provider
+        analyzer.config["agent_llm_model"] = agent_llm_model
+        analyzer.config["graph_llm_model"] = graph_llm_model
+
+        analyzer.trading_graph.config.update(analyzer.config)
+        analyzer.trading_graph.refresh_llms()
+
+        response = {
+            "success": True,
+            "message": "Modelos actualizados correctamente",
+        }
+        response.update(get_provider_model_config(analyzer.config, provider))
+        return jsonify(response)
+    except Exception as e:
+        print(f"Error in update_llm_models: {str(e)}")
+        return jsonify({"error": "No se pudieron actualizar los modelos en este momento."})
 
 
 @app.route("/api/update-api-key", methods=["POST"])

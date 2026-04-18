@@ -20,6 +20,39 @@ class TestWebBackendLocalization(unittest.TestCase):
     """Tests for user-facing backend messages exposed by the Flask app."""
 
     @patch("web_interface.TradingGraph")
+    def test_health_route_returns_ok(self, mock_tg_class):
+        """GET /health should return a simple ok payload."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app
+
+        client = app.test_client()
+        resp = client.get("/health")
+        data = resp.get_json()
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data, {"status": "ok"})
+
+    @patch("web_interface.TradingGraph")
+    def test_index_route_sets_basic_security_headers(self, mock_tg_class):
+        """GET / should include baseline security headers for the web UI."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app
+
+        client = app.test_client()
+        resp = client.get("/")
+
+        self.assertEqual(resp.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(resp.headers["X-Frame-Options"], "DENY")
+        self.assertEqual(resp.headers["Referrer-Policy"], "no-referrer")
+        self.assertIn("default-src 'self'", resp.headers["Content-Security-Policy"])
+
+    @patch("web_interface.TradingGraph")
     def test_analyze_route_rejects_non_live_data_source_in_spanish(self, mock_tg_class):
         """POST /api/analyze should reject unsupported data sources in Spanish."""
         mock_tg = MagicMock()

@@ -284,6 +284,97 @@ class TestWebInterfaceCopilotRoutes(unittest.TestCase):
 
     @patch("web_interface.validate_copilot_auth")
     @patch("web_interface.TradingGraph")
+    def test_get_api_key_status_copilot_reports_cli_login(
+        self, mock_tg_class, mock_validate_copilot_auth
+    ):
+        """GET /api/get-api-key-status?provider=copilot should report CLI auth when available."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+        mock_validate_copilot_auth.return_value = (True, ["gpt-5.4", "claude-opus-4.6"])
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.config["copilot_github_token"] = ""
+        analyzer.trading_graph = mock_tg
+
+        with patch.dict(
+            os.environ,
+            {},
+            clear=True,
+        ):
+            client = app.test_client()
+            resp = client.get("/api/get-api-key-status?provider=copilot")
+            data = resp.get_json()
+
+        self.assertTrue(data.get("has_key"))
+        self.assertEqual(data.get("auth_source"), "cli_login")
+        self.assertEqual(data.get("masked_key"), "CLI login")
+
+    @patch("web_interface.list_available_copilot_models")
+    @patch("web_interface.TradingGraph")
+    def test_get_provider_model_options_copilot(
+        self, mock_tg_class, mock_list_models
+    ):
+        """GET /api/provider-model-options?provider=copilot should return available model options."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+        mock_list_models.return_value = ["gpt-5.4", "claude-opus-4.6", "claude-sonnet-4.5"]
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.config["agent_llm_provider"] = "copilot"
+        analyzer.config["graph_llm_provider"] = "copilot"
+        analyzer.config["agent_llm_model"] = "gpt-5.4"
+        analyzer.config["graph_llm_model"] = "claude-opus-4.6"
+        analyzer.trading_graph = mock_tg
+
+        client = app.test_client()
+        resp = client.get("/api/provider-model-options?provider=copilot")
+        data = resp.get_json()
+
+        self.assertEqual(data.get("provider"), "copilot")
+        self.assertIn("gpt-5.4", data.get("agent_model_options", []))
+        self.assertIn("claude-opus-4.6", data.get("graph_model_options", []))
+        self.assertEqual(data.get("selected_agent_model"), "gpt-5.4")
+        self.assertEqual(data.get("selected_graph_model"), "claude-opus-4.6")
+
+    @patch("web_interface.TradingGraph")
+    def test_update_llm_models_copilot(self, mock_tg_class):
+        """POST /api/update-llm-models with copilot should update both selected models."""
+        mock_tg = MagicMock()
+        mock_tg.config = DEFAULT_CONFIG.copy()
+        mock_tg_class.return_value = mock_tg
+
+        from web_interface import app, analyzer
+
+        analyzer.config = DEFAULT_CONFIG.copy()
+        analyzer.config["agent_llm_provider"] = "copilot"
+        analyzer.config["graph_llm_provider"] = "copilot"
+        analyzer.trading_graph = mock_tg
+
+        client = app.test_client()
+        resp = client.post(
+            "/api/update-llm-models",
+            json={
+                "provider": "copilot",
+                "agent_llm_model": "gpt-5.4",
+                "graph_llm_model": "claude-opus-4.6",
+            },
+            content_type="application/json",
+        )
+        data = resp.get_json()
+
+        self.assertTrue(data.get("success"))
+        self.assertEqual(analyzer.config["agent_llm_model"], "gpt-5.4")
+        self.assertEqual(analyzer.config["graph_llm_model"], "claude-opus-4.6")
+        mock_tg.refresh_llms.assert_called_once()
+
+    @patch("web_interface.validate_copilot_auth")
+    @patch("web_interface.TradingGraph")
     def test_validate_api_key_copilot_uses_sdk_auth_check(
         self, mock_tg_class, mock_validate_copilot_auth
     ):

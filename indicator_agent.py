@@ -10,6 +10,11 @@ from langchain_core.messages import ToolMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 
+def _supports_langchain_tool_calls(llm) -> bool:
+    """Return whether the model can surface LangChain-style tool calls."""
+    return getattr(llm, "supports_langchain_tool_calls", True)
+
+
 def build_indicator_system_prompt(time_frame: str) -> str:
     """Build the Spanish system prompt for indicator analysis."""
     return (
@@ -39,6 +44,7 @@ def create_indicator_agent(llm, toolkit):
             toolkit.compute_willr,
         ]
         time_frame = state["time_frame"]
+        supports_tool_calls = _supports_langchain_tool_calls(llm)
         # --- System prompt for LLM ---
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -49,6 +55,30 @@ def create_indicator_agent(llm, toolkit):
                 MessagesPlaceholder(variable_name="messages"),
             ]
         ).partial(kline_data=json.dumps(state["kline_data"], indent=2))
+
+        if not supports_tool_calls:
+            precomputed_indicators = {}
+            for tool_fn in tools:
+                precomputed_indicators[tool_fn.name] = tool_fn.invoke(
+                    {"kline_data": copy.deepcopy(state["kline_data"])}
+                )
+
+            fallback_messages = [
+                HumanMessage(
+                    content=(
+                        "Inicia el análisis de indicadores y responde en español. "
+                        "Los indicadores ya fueron calculados manualmente; no intentes llamar herramientas.\n\n"
+                        f"Resultados:\n{json.dumps(precomputed_indicators, indent=2)}"
+                    )
+                )
+            ]
+            final_response = llm.invoke(fallback_messages)
+            return {
+                "messages": fallback_messages + [final_response],
+                "indicator_report": final_response.content
+                if getattr(final_response, "content", "")
+                else "Análisis de indicadores completado.",
+            }
 
         chain = prompt | llm.bind_tools(tools)
         # messages = state["messages"]
